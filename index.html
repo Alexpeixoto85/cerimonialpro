@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary-color: #8B4513;
@@ -23,6 +24,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
+        /* Sidebar Responsive */
         .sidebar {
             background: linear-gradient(to bottom, var(--primary-color), var(--dark-color));
             color: white;
@@ -30,7 +32,9 @@
             position: fixed;
             padding-top: 20px;
             overflow-y: auto;
-            z-index: 100;
+            z-index: 1000;
+            transition: all 0.3s;
+            width: 250px;
         }
         
         .sidebar .nav-link {
@@ -55,8 +59,60 @@
         .main-content {
             margin-left: 250px;
             padding: 20px;
+            transition: all 0.3s;
         }
         
+        /* Mobile Navbar */
+        .mobile-header {
+            display: none;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 15px;
+            position: sticky;
+            top: 0;
+            z-index: 1001;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 991.98px) {
+            .sidebar {
+                left: -250px;
+            }
+            .sidebar.active {
+                left: 0;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 15px;
+            }
+            .mobile-header {
+                display: flex;
+            }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+            .sidebar-overlay.active {
+                display: block;
+            }
+            .header {
+                flex-direction: column;
+                align-items: flex-start !important;
+                gap: 10px;
+            }
+            .header h4 {
+                margin-bottom: 0;
+            }
+        }
+
         .header {
             background-color: white;
             padding: 15px 20px;
@@ -93,23 +149,6 @@
             border-color: var(--secondary-color);
         }
         
-        .btn-success {
-            background-color: #28a745;
-            border-color: #28a745;
-        }
-        
-        .btn-pdf {
-            background-color: #e74c3c;
-            border-color: #e74c3c;
-            color: white;
-        }
-        
-        .btn-pdf:hover {
-            background-color: #c0392b;
-            border-color: #c0392b;
-            color: white;
-        }
-        
         .stat-card {
             text-align: center;
             padding: 20px;
@@ -118,1407 +157,211 @@
             margin-bottom: 20px;
         }
         
-        .stat-card.primary {
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-        }
+        .stat-card.primary { background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); }
+        .stat-card.secondary { background: linear-gradient(45deg, var(--secondary-color), var(--accent-color)); }
+        .stat-card.accent { background: linear-gradient(45deg, var(--accent-color), #FFD700); }
         
-        .stat-card.secondary {
-            background: linear-gradient(45deg, var(--secondary-color), var(--accent-color));
-        }
+        .stat-card i { font-size: 2.5rem; margin-bottom: 10px; }
+        .stat-card .number { font-size: 2rem; font-weight: bold; }
         
-        .stat-card.accent {
-            background: linear-gradient(45deg, var(--accent-color), #FFD700);
-        }
-        
-        .stat-card i {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-        
-        .stat-card .number {
-            font-size: 2rem;
-            font-weight: bold;
-        }
-        
-        .table th {
-            background-color: var(--light-color);
-        }
-        
-        .badge-event {
-            background-color: var(--accent-color);
-            color: var(--dark-color);
-        }
-        
-        .event-timeline {
-            position: relative;
-            padding-left: 30px;
-        }
-        
-        .event-timeline::before {
-            content: '';
-            position: absolute;
-            left: 15px;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background-color: var(--primary-color);
-        }
-        
-        .timeline-item {
-            position: relative;
-            margin-bottom: 20px;
-        }
-        
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: -23px;
-            top: 5px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: var(--primary-color);
-        }
-        
-        .form-section {
-            background-color: white;
-            padding: 20px;
+        .table-responsive {
             border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        
-        .form-section h5 {
-            color: var(--primary-color);
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .tab-content {
-            padding: 20px 0;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #6c757d;
-        }
-        
-        .empty-state i {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            color: #dee2e6;
-        }
-        
-        .backup-section {
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            border: 2px dashed #dee2e6;
-        }
-        
-        .modal-header {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        
-        .action-buttons {
-            display: flex;
-            gap: 5px;
-        }
-        
-        .action-buttons .btn {
-            padding: 0.25rem 0.5rem;
-        }
-        
-        .supplier-category {
-            background-color: #e9ecef;
-            padding: 5px 10px;
-            border-radius: 15px;
+
+        /* Gist Sync Status */
+        .sync-status {
             font-size: 0.8rem;
-            display: inline-block;
-            margin: 2px;
+            margin-left: 10px;
+            padding: 4px 8px;
+            border-radius: 20px;
+            background: #f1f1f1;
         }
-        
-        /* Timeout Modal */
-        .timeout-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-        
-        .timeout-content {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-        }
-        
-        .timeout-content h3 {
-            color: var(--primary-color);
-            margin-bottom: 15px;
-        }
-        
-        .timeout-content p {
-            margin-bottom: 20px;
-            color: #666;
-        }
-        
-        .timeout-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-        
+        .sync-status.online { color: #28a745; background: #e8f5e9; }
+        .sync-status.offline { color: #dc3545; background: #ffebee; }
+        .sync-status.syncing { color: #007bff; background: #e3f2fd; }
+
         /* PDF Template Styles */
         .pdf-template {
             position: fixed;
             left: -10000px;
             top: -10000px;
             width: 210mm;
-            padding: 15mm; /* Reduzido de 20mm para 15mm */
+            padding: 15mm;
             background: white;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            font-size: 12px; /* Reduzido para caber mais conteúdo */
-            line-height: 1.3; /* Ajustado para melhor legibilidade */
+            font-size: 12px;
+            line-height: 1.3;
         }
         
         .pdf-header {
             background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
             color: white;
-            padding: 15px; /* Reduzido de 20px para 15px */
+            padding: 15px;
             border-radius: 10px 10px 0 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px; /* Adicionado espaçamento */
+            margin-bottom: 15px;
         }
         
-        .pdf-logo {
-            font-size: 20px; /* Reduzido de 24px para 20px */
-            font-weight: bold;
-        }
-        
-        .pdf-title {
-            text-align: center;
-            margin: 15px 0; /* Reduzido de 20px para 15px */
-            color: var(--primary-color);
-            border-bottom: 2px solid var(--accent-color);
-            padding-bottom: 8px; /* Reduzido de 10px para 8px */
-            font-size: 18px; /* Ajustado para equilíbrio */
-        }
-        
-        .pdf-section {
-            margin-bottom: 15px; /* Reduzido de 20px para 15px */
-            padding: 12px; /* Reduzido de 15px para 12px */
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-        }
-        
-        .pdf-section-title {
-            color: var(--secondary-color);
-            margin-bottom: 8px; /* Reduzido de 10px para 8px */
-            font-weight: bold;
-            font-size: 13px; /* Ajustado para equilíbrio */
-        }
-        
-        .pdf-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 8px 0; /* Reduzido de 10px para 8px */
-            font-size: 11px; /* Reduzido para caber mais conteúdo */
-        }
-        
-        .pdf-table th {
-            background-color: var(--light-color);
-            padding: 8px; /* Reduzido de 10px para 8px */
-            text-align: left;
-            border: 1px solid #ddd;
-        }
-        
-        .pdf-table td {
-            padding: 6px 8px; /* Reduzido de 8px 10px para 6px 8px */
-            border: 1px solid #ddd;
-        }
-        
-        .pdf-footer {
-            margin-top: 20px; /* Reduzido de 30px para 20px */
-            padding-top: 15px; /* Reduzido de 20px para 15px */
-            border-top: 1px solid #e0e0e0;
-            text-align: center;
-            color: #666;
-            font-size: 10px; /* Reduzido de 12px para 10px */
-        }
-        
-        .pdf-signature {
-            margin-top: 25px; /* Reduzido de 40px para 25px */
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        .pdf-signature-line {
-            border-top: 1px solid #333;
-            width: 180px; /* Reduzido de 200px para 180px */
-            text-align: center;
-            padding-top: 5px;
-            font-size: 11px; /* Ajustado para equilíbrio */
-        }
-
-        /* Estilos específicos para o contrato */
-        #contract-pdf-template .pdf-section {
-            margin-bottom: 12px; /* Menor espaçamento entre seções */
-            padding: 10px; /* Menor padding interno */
-        }
-
-        #contract-pdf-template .pdf-section p {
-            margin-bottom: 8px; /* Menor espaçamento entre parágrafos */
-        }
-
-        #contract-pdf-template .pdf-section-title {
-            margin-bottom: 6px; /* Menor espaçamento após título */
-        }
+        .pdf-logo { font-size: 20px; font-weight: bold; }
+        .pdf-title { text-align: center; margin: 15px 0; color: var(--primary-color); border-bottom: 2px solid var(--accent-color); padding-bottom: 8px; font-size: 18px; }
+        .pdf-section { margin-bottom: 15px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; }
+        .pdf-section-title { color: var(--secondary-color); margin-bottom: 8px; font-weight: bold; font-size: 13px; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 11px; }
+        .pdf-table th { background-color: var(--light-color); padding: 8px; text-align: left; border: 1px solid #ddd; }
+        .pdf-table td { padding: 6px 8px; border: 1px solid #ddd; }
+        .pdf-footer { margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0; text-align: center; color: #666; font-size: 10px; }
+        .pdf-signature { margin-top: 25px; display: flex; justify-content: space-between; }
+        .pdf-signature-line { border-top: 1px solid #333; width: 180px; text-align: center; padding-top: 5px; font-size: 11px; }
     </style>
 </head>
 <body>
-    <!-- Timeout Modal -->
-    <div id="timeoutModal" class="timeout-modal" style="display: none;">
-        <div class="timeout-content">
-            <h3><i class="fas fa-clock"></i> Sessão Inativa</h3>
-            <p>Você ficou inativo por algum tempo. Deseja continuar no sistema?</p>
-            <div class="timeout-buttons">
-                <button class="btn btn-primary" onclick="continueSession()">
-                    <i class="fas fa-play"></i> Continuar no Sistema
-                </button>
-                <button class="btn btn-secondary" onclick="logoutWithBackup()">
-                    <i class="fas fa-sign-out-alt"></i> Sair
-                </button>
-            </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="mobile-header">
+        <button class="btn btn-link text-white p-0" id="sidebarToggle">
+            <i class="fas fa-bars fa-lg"></i>
+        </button>
+        <h5 class="m-0">CerimonialPro</h5>
+        <div id="mobileSyncIcon">
+            <i class="fas fa-sync-alt" onclick="syncWithGist()" style="cursor: pointer;"></i>
         </div>
     </div>
 
     <!-- Sidebar -->
-    <div class="sidebar col-md-2">
+    <div class="sidebar" id="sidebar">
         <div class="text-center mb-4">
             <h3><i class="fas fa-glass-cheers"></i> <span id="companyNameDisplay">CerimonialPro</span></h3>
         </div>
         <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link active" href="#" data-target="dashboard"><i class="fas fa-home"></i> Dashboard</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-target="events"><i class="fas fa-calendar-alt"></i> Eventos</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-target="clients"><i class="fas fa-users"></i> Clientes</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-target="suppliers"><i class="fas fa-handshake"></i> Fornecedores</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-target="budgets"><i class="fas fa-file-invoice-dollar"></i> Orçamentos</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-target="contracts"><i class="fas fa-file-contract"></i> Contratos</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-target="receipts"><i class="fas fa-receipt"></i> Recibos</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-target="reports"><i class="fas fa-chart-bar"></i> Relatórios</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-target="settings"><i class="fas fa-cog"></i> Configurações</a>
-            </li>
+            <li class="nav-item"><a class="nav-link active" href="#" data-target="dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" data-target="events"><i class="fas fa-calendar-alt"></i> Eventos</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" data-target="clients"><i class="fas fa-users"></i> Clientes</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" data-target="suppliers"><i class="fas fa-handshake"></i> Fornecedores</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" data-target="budgets"><i class="fas fa-file-invoice-dollar"></i> Orçamentos</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" data-target="contracts"><i class="fas fa-file-contract"></i> Contratos</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" data-target="receipts"><i class="fas fa-receipt"></i> Recibos</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" data-target="reports"><i class="fas fa-chart-bar"></i> Relatórios</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" data-target="settings"><i class="fas fa-cog"></i> Configurações</a></li>
         </ul>
     </div>
 
     <!-- Main Content -->
-    <div class="main-content col-md-10">
-        <!-- Header -->
+    <div class="main-content">
         <div class="header">
-            <h4 id="pageTitle">Dashboard</h4>
-            <div class="user-info">
-                <span id="userName">Olá, Cerimonialista</span>
-                <img src="https://ui-avatars.com/api/?name=Cerimonialista&background=8B4513&color=fff" class="rounded-circle ms-2" width="40" height="40" id="userAvatar">
+            <h4 id="pageTitleDisplay">Dashboard</h4>
+            <div class="d-flex align-items-center">
+                <span id="syncStatus" class="sync-status offline"><i class="fas fa-cloud-upload-alt"></i> Não Sincronizado</span>
+                <button class="btn btn-sm btn-outline-primary ms-3 d-none d-md-block" onclick="syncWithGist()">
+                    <i class="fas fa-sync"></i> Sincronizar
+                </button>
             </div>
         </div>
 
-        <!-- Dashboard Content -->
+        <!-- Dashboard Section -->
         <div id="dashboard" class="content-section">
-            <!-- Stats Cards -->
             <div class="row">
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="stat-card primary">
                         <i class="fas fa-calendar-check"></i>
-                        <div class="number" id="activeEventsCount">0</div>
+                        <div class="number" id="totalEvents">0</div>
                         <div>Eventos Ativos</div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="stat-card secondary">
                         <i class="fas fa-users"></i>
-                        <div class="number" id="clientsCount">0</div>
-                        <div>Clientes</div>
+                        <div class="number" id="totalClients">0</div>
+                        <div>Clientes Cadastrados</div>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="stat-card accent">
-                        <i class="fas fa-handshake"></i>
-                        <div class="number" id="suppliersCount">0</div>
-                        <div>Fornecedores</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card primary">
                         <i class="fas fa-dollar-sign"></i>
-                        <div class="number" id="monthlyRevenue">R$ 0</div>
-                        <div>Faturamento Mensal</div>
+                        <div class="number" id="totalRevenue">R$ 0,00</div>
+                        <div>Receita Total</div>
                     </div>
                 </div>
             </div>
-
-            <div class="row">
-                <!-- Próximos Eventos -->
-                <div class="col-md-6">
+            
+            <div class="row mt-4">
+                <div class="col-md-8">
                     <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <span>Próximos Eventos</span>
-                            <button class="btn btn-sm btn-light" onclick="showSection('events')">Ver Todos</button>
-                        </div>
+                        <div class="card-header">Próximos Eventos</div>
                         <div class="card-body">
-                            <div id="upcomingEventsList">
-                                <div class="empty-state">
-                                    <i class="fas fa-calendar-plus"></i>
-                                    <h5>Nenhum evento próximo</h5>
-                                    <p>Cadastre seus primeiros eventos para vê-los aqui.</p>
-                                    <button class="btn btn-primary" onclick="showQuickEventModal()">Cadastrar Evento</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tarefas Pendentes -->
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <span>Tarefas Pendentes</span>
-                            <button class="btn btn-sm btn-light" onclick="showTaskModal()">Nova Tarefa</button>
-                        </div>
-                        <div class="card-body">
-                            <div id="pendingTasksList">
-                                <div class="empty-state">
-                                    <i class="fas fa-tasks"></i>
-                                    <h5>Nenhuma tarefa pendente</h5>
-                                    <p>Adicione tarefas para organizar seu trabalho.</p>
-                                    <button class="btn btn-primary" onclick="showTaskModal()">Adicionar Tarefa</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Botão para Cadastro Rápido de Evento -->
-            <div class="card mt-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Cadastro Rápido</span>
-                    <button class="btn btn-primary" onclick="showQuickEventModal()">
-                        <i class="fas fa-plus"></i> Novo Evento Rápido
-                    </button>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted">Clique no botão acima para cadastrar um evento rapidamente.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Events Content -->
-        <div id="events" class="content-section" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5>Gerenciamento de Eventos</h5>
-                <button class="btn btn-primary" onclick="showEventModal()">
-                    <i class="fas fa-plus"></i> Novo Evento
-                </button>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    Lista de Eventos
-                </div>
-                <div class="card-body">
-                    <div id="eventsList">
-                        <div class="empty-state">
-                            <i class="fas fa-calendar-plus"></i>
-                            <h5>Nenhum evento cadastrado</h5>
-                            <p>Comece cadastrando seu primeiro evento.</p>
-                            <button class="btn btn-primary" onclick="showEventModal()">Cadastrar Evento</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Clients Content -->
-        <div id="clients" class="content-section" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5>Gerenciamento de Clientes</h5>
-                <button class="btn btn-primary" onclick="showClientModal()">
-                    <i class="fas fa-plus"></i> Novo Cliente
-                </button>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    Lista de Clientes
-                </div>
-                <div class="card-body">
-                    <div id="clientsList">
-                        <div class="empty-state">
-                            <i class="fas fa-users"></i>
-                            <h5>Nenhum cliente cadastrado</h5>
-                            <p>Comece cadastrando seu primeiro cliente.</p>
-                            <button class="btn btn-primary" onclick="showClientModal()">Cadastrar Cliente</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Suppliers Content -->
-        <div id="suppliers" class="content-section" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5>Gerenciamento de Fornecedores</h5>
-                <button class="btn btn-primary" onclick="showSupplierModal()">
-                    <i class="fas fa-plus"></i> Novo Fornecedor
-                </button>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    Lista de Fornecedores
-                </div>
-                <div class="card-body">
-                    <div id="suppliersList">
-                        <div class="empty-state">
-                            <i class="fas fa-handshake"></i>
-                            <h5>Nenhum fornecedor cadastrado</h5>
-                            <p>Comece cadastrando seu primeiro fornecedor.</p>
-                            <button class="btn btn-primary" onclick="showSupplierModal()">Cadastrar Fornecedor</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Budgets Content -->
-        <div id="budgets" class="content-section" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5>Gerenciamento de Orçamentos</h5>
-                <button class="btn btn-primary" onclick="showBudgetModal()">
-                    <i class="fas fa-plus"></i> Novo Orçamento
-                </button>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    Lista de Orçamentos
-                </div>
-                <div class="card-body">
-                    <div id="budgetsList">
-                        <div class="empty-state">
-                            <i class="fas fa-file-invoice-dollar"></i>
-                            <h5>Nenhum orçamento cadastrado</h5>
-                            <p>Comece criando seu primeiro orçamento.</p>
-                            <button class="btn btn-primary" onclick="showBudgetModal()">Criar Orçamento</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Contracts Content -->
-        <div id="contracts" class="content-section" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5>Gerenciamento de Contratos</h5>
-                <button class="btn btn-primary" onclick="showContractModal()">
-                    <i class="fas fa-plus"></i> Novo Contrato
-                </button>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    Lista de Contratos
-                </div>
-                <div class="card-body">
-                    <div id="contractsList">
-                        <div class="empty-state">
-                            <i class="fas fa-file-contract"></i>
-                            <h5>Nenhum contrato cadastrado</h5>
-                            <p>Comece criando seu primeiro contrato.</p>
-                            <button class="btn btn-primary" onclick="showContractModal()">Criar Contrato</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Receipts Content -->
-        <div id="receipts" class="content-section" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5>Gerenciamento de Recibos</h5>
-                <button class="btn btn-primary" onclick="showReceiptModal()">
-                    <i class="fas fa-plus"></i> Novo Recibo
-                </button>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    Lista de Recibos
-                </div>
-                <div class="card-body">
-                    <div id="receiptsList">
-                        <div class="empty-state">
-                            <i class="fas fa-receipt"></i>
-                            <h5>Nenhum recibo cadastrado</h5>
-                            <p>Comece criando seu primeiro recibo.</p>
-                            <button class="btn btn-primary" onclick="showReceiptModal()">Criar Recibo</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Reports Content -->
-        <div id="reports" class="content-section" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5>Relatórios e Análises</h5>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            Relatório Financeiro
-                        </div>
-                        <div class="card-body">
-                            <canvas id="financialChart" height="200"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">
-                            Eventos por Tipo
-                        </div>
-                        <div class="card-body">
-                            <canvas id="eventsChart" height="200"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card mt-4">
-                <div class="card-header">
-                    Relatório Detalhado
-                </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label for="reportType" class="form-label">Tipo de Relatório</label>
-                            <select class="form-select" id="reportType">
-                                <option value="financial">Financeiro</option>
-                                <option value="events">Eventos</option>
-                                <option value="clients">Clientes</option>
-                                <option value="suppliers">Fornecedores</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="startDate" class="form-label">Data Inicial</label>
-                            <input type="date" class="form-control" id="startDate">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="endDate" class="form-label">Data Final</label>
-                            <input type="date" class="form-control" id="endDate">
-                        </div>
-                    </div>
-                    <button class="btn btn-primary" onclick="generateReport()">
-                        <i class="fas fa-download"></i> Gerar Relatório
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Settings Content -->
-        <div id="settings" class="content-section" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h5>Configurações do Sistema</h5>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    Configurações Gerais
-                </div>
-                <div class="card-body">
-                    <form id="settingsForm">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="companyName" class="form-label">Nome da Empresa</label>
-                                    <input type="text" class="form-control" id="companyName" value="CerimonialPro">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="userName" class="form-label">Nome do Usuário</label>
-                                    <input type="text" class="form-control" id="userName" value="Cerimonialista">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="email" class="form-label">E-mail</label>
-                                    <input type="email" class="form-control" id="email" value="contato@cerimonialpro.com">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="phone" class="form-label">Telefone</label>
-                                    <input type="text" class="form-control" id="phone" value="(11) 99999-9999">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="address" class="form-label">Endereço</label>
-                            <textarea class="form-control" id="address" rows="2"></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Salvar Configurações</button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Backup Section in Settings -->
-            <div class="card mt-4">
-                <div class="card-header">
-                    <i class="fas fa-database"></i> Backup do Sistema
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="backup-section text-center p-4">
-                                <i class="fas fa-file-export fa-3x mb-3 text-primary"></i>
-                                <h5>Exportar Backup</h5>
-                                <p class="mb-3">Crie uma cópia de segurança de todos os dados do sistema.</p>
-                                <button class="btn btn-primary" onclick="exportData()">
-                                    <i class="fas fa-download"></i> Exportar Dados
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="backup-section text-center p-4">
-                                <i class="fas fa-file-import fa-3x mb-3 text-success"></i>
-                                <h5>Importar Backup</h5>
-                                <p class="mb-3">Restaurar dados a partir de um arquivo de backup.</p>
-                                <div class="mb-3">
-                                    <input type="file" id="backupFile" class="form-control" accept=".json">
-                                </div>
-                                <button class="btn btn-success" onclick="importData()">
-                                    <i class="fas fa-upload"></i> Importar Dados
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="alert alert-warning mt-4">
-                        <h5><i class="fas fa-exclamation-triangle"></i> Aviso Importante</h5>
-                        <p class="mb-0">A ação abaixo irá remover todos os dados do sistema. Certifique-se de ter feito um backup antes de prosseguir.</p>
-                    </div>
-                    <button class="btn btn-danger" onclick="clearAllData()">
-                        <i class="fas fa-trash"></i> Limpar Todos os Dados
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- PDF Templates -->
-    <div id="pdf-templates">
-        <!-- Budget PDF Template -->
-        <div id="budget-pdf-template" class="pdf-template">
-            <div class="pdf-header">
-                <div class="pdf-logo">
-                    <i class="fas fa-glass-cheers"></i> <span id="budget-pdf-company-name">CerimonialPro</span>
-                </div>
-                <div class="pdf-date" id="budget-pdf-date"></div>
-            </div>
-            
-            <h1 class="pdf-title" id="budget-pdf-title">ORÇAMENTO</h1>
-            
-            <div class="pdf-section">
-                <div class="pdf-section-title">Informações do Cliente</div>
-                <div id="budget-pdf-client-info"></div>
-            </div>
-            
-            <div class="pdf-section">
-                <div class="pdf-section-title">Informações do Evento</div>
-                <div id="budget-pdf-event-info"></div>
-            </div>
-            
-            <div class="pdf-section">
-                <div class="pdf-section-title">Itens do Orçamento</div>
-                <table class="pdf-table" id="budget-pdf-items">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Quantidade</th>
-                            <th>Valor Unitário</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="budget-pdf-items-body">
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="3" style="text-align: right; font-weight: bold;">Total:</td>
-                            <td style="font-weight: bold;" id="budget-pdf-total"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-            
-            <div class="pdf-section" id="budget-pdf-observations-section">
-                <div class="pdf-section-title">Observações</div>
-                <div id="budget-pdf-observations"></div>
-            </div>
-            
-            <div class="pdf-footer">
-                <p id="budget-pdf-footer-company">CerimonialPro - Sistema de Gestão de Eventos</p>
-                <p id="budget-pdf-footer-contact">www.cerimonialpro.com | contato@cerimonialpro.com | (11) 99999-9999</p>
-            </div>
-        </div>
-
-        <!-- Contract PDF Template -->
-        <div id="contract-pdf-template" class="pdf-template">
-            <div class="pdf-header">
-                <div class="pdf-logo">
-                    <i class="fas fa-glass-cheers"></i> <span id="contract-pdf-company-name">CerimonialPro</span>
-                </div>
-                <div class="pdf-date" id="contract-pdf-date"></div>
-            </div>
-            
-            <h1 class="pdf-title" id="contract-pdf-title">CONTRATO DE PRESTAÇÃO DE SERVIÇOS</h1>
-            
-            <div class="pdf-section">
-                <div class="pdf-section-title">Partes Contratantes</div>
-                <div id="contract-pdf-parties"></div>
-            </div>
-            
-            <div class="pdf-section">
-                <div class="pdf-section-title">Objeto do Contrato</div>
-                <div id="contract-pdf-object"></div>
-            </div>
-            
-            <div class="pdf-section">
-                <div class="pdf-section-title">Valor e Condições de Pagamento</div>
-                <div id="contract-pdf-payment"></div>
-            </div>
-            
-            <div class="pdf-section">
-                <div class="pdf-section-title">Termos e Condições</div>
-                <div id="contract-pdf-terms"></div>
-            </div>
-            
-            <div class="pdf-signature">
-                <div class="pdf-signature-line">
-                    <p>Contratante</p>
-                </div>
-                <div class="pdf-signature-line">
-                    <p id="contract-pdf-signature-company">CerimonialPro</p>
-                </div>
-            </div>
-            
-            <div class="pdf-footer">
-                <p id="contract-pdf-footer-company">CerimonialPro - Sistema de Gestão de Eventos</p>
-                <p id="contract-pdf-footer-contact">www.cerimonialpro.com | contato@cerimonialpro.com | (11) 99999-9999</p>
-            </div>
-        </div>
-
-        <!-- Receipt PDF Template -->
-        <div id="receipt-pdf-template" class="pdf-template">
-            <div class="pdf-header">
-                <div class="pdf-logo">
-                    <i class="fas fa-glass-cheers"></i> <span id="receipt-pdf-company-name">CerimonialPro</span>
-                </div>
-                <div class="pdf-date" id="receipt-pdf-date"></div>
-            </div>
-            
-            <h1 class="pdf-title" id="receipt-pdf-title">RECIBO</h1>
-            
-            <div class="pdf-section">
-                <div class="pdf-section-title">Informações do Pagamento</div>
-                <div id="receipt-pdf-payment-info"></div>
-            </div>
-            
-            <div class="pdf-section">
-                <div class="pdf-section-title">Descrição</div>
-                <div id="receipt-pdf-description"></div>
-            </div>
-            
-            <div class="pdf-signature">
-                <div class="pdf-signature-line">
-                    <p id="receipt-pdf-signature-company">CerimonialPro</p>
-                </div>
-            </div>
-            
-            <div class="pdf-footer">
-                <p id="receipt-pdf-footer-company">CerimonialPro - Sistema de Gestão de Eventos</p>
-                <p id="receipt-pdf-footer-contact">www.cerimonialpro.com | contato@cerimonialpro.com | (11) 99999-9999</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Event Modal -->
-    <div class="modal fade" id="quickEventModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Cadastro Rápido de Evento</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="quickEventForm">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="eventType" class="form-label">Tipo de Evento</label>
-                                    <select class="form-select" id="eventType" required>
-                                        <option value="">Selecione...</option>
-                                        <option value="casamento">Casamento</option>
-                                        <option value="aniversario">Aniversário</option>
-                                        <option value="formatura">Formatura</option>
-                                        <option value="corporativo">Evento Corporativo</option>
-                                        <option value="outro">Outro</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="clientName" class="form-label">Nome do Cliente</label>
-                                    <input type="text" class="form-control" id="clientName" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="eventDate" class="form-label">Data do Evento</label>
-                                    <input type="date" class="form-control" id="eventDate" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="eventLocation" class="form-label">Local do Evento</label>
-                                    <input type="text" class="form-control" id="eventLocation">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="guestsNumber" class="form-label">Número de Convidados</label>
-                                    <input type="number" class="form-control" id="guestsNumber">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="budget" class="form-label">Orçamento Estimado (R$)</label>
-                                    <input type="number" class="form-control" id="budget" step="0.01">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="observations" class="form-label">Observações</label>
-                            <textarea class="form-control" id="observations" rows="3"></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="saveQuickEvent()">Salvar Evento</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Event Modal -->
-    <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="eventModalTitle">Novo Evento</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="eventForm">
-                        <input type="hidden" id="eventId">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="eventFormType" class="form-label">Tipo de Evento *</label>
-                                    <select class="form-select" id="eventFormType" required>
-                                        <option value="">Selecione...</option>
-                                        <option value="casamento">Casamento</option>
-                                        <option value="aniversario">Aniversário</option>
-                                        <option value="formatura">Formatura</option>
-                                        <option value="corporativo">Evento Corporativo</option>
-                                        <option value="outro">Outro</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="eventFormClient" class="form-label">Cliente *</label>
-                                    <select class="form-select" id="eventFormClient" required>
-                                        <option value="">Selecione um cliente...</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="eventFormDate" class="form-label">Data do Evento *</label>
-                                    <input type="date" class="form-control" id="eventFormDate" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="eventFormTime" class="form-label">Horário do Evento</label>
-                                    <input type="time" class="form-control" id="eventFormTime">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="eventFormLocation" class="form-label">Local do Evento</label>
-                                    <input type="text" class="form-control" id="eventFormLocation">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="eventFormGuests" class="form-label">Número de Convidados</label>
-                                    <input type="number" class="form-control" id="eventFormGuests">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="eventFormBudget" class="form-label">Orçamento Estimado (R$)</label>
-                                    <input type="number" class="form-control" id="eventFormBudget" step="0.01">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="eventFormStatus" class="form-label">Status</label>
-                                    <select class="form-select" id="eventFormStatus">
-                                        <option value="planejamento">Em Planejamento</option>
-                                        <option value="confirmado">Confirmado</option>
-                                        <option value="realizado">Realizado</option>
-                                        <option value="cancelado">Cancelado</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="eventFormDescription" class="form-label">Descrição do Evento</label>
-                            <textarea class="form-control" id="eventFormDescription" rows="3"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="eventFormObservations" class="form-label">Observações</label>
-                            <textarea class="form-control" id="eventFormObservations" rows="3"></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="saveEvent()">Salvar Evento</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Client Modal -->
-    <div class="modal fade" id="clientModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="clientModalTitle">Novo Cliente</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="clientForm">
-                        <input type="hidden" id="clientId">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="clientFormType" class="form-label">Tipo de Cliente *</label>
-                                    <select class="form-select" id="clientFormType" required>
-                                        <option value="">Selecione...</option>
-                                        <option value="casal">Casal (Casamento)</option>
-                                        <option value="individual">Individual (Aniversário/Outros)</option>
-                                        <option value="empresa">Empresa (Corporativo)</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="clientFormName" class="form-label">Nome Completo *</label>
-                                    <input type="text" class="form-control" id="clientFormName" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="clientFormEmail" class="form-label">E-mail</label>
-                                    <input type="email" class="form-control" id="clientFormEmail">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="clientFormPhone" class="form-label">Telefone</label>
-                                    <input type="text" class="form-control" id="clientFormPhone">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="clientFormCpfCnpj" class="form-label">CPF/CNPJ</label>
-                                    <input type="text" class="form-control" id="clientFormCpfCnpj">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="clientFormAddress" class="form-label">Endereço</label>
-                                    <textarea class="form-control" id="clientFormAddress" rows="3"></textarea>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="saveClient()">Salvar Cliente</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Supplier Modal -->
-    <div class="modal fade" id="supplierModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="supplierModalTitle">Novo Fornecedor</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="supplierForm">
-                        <input type="hidden" id="supplierId">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="supplierFormName" class="form-label">Nome do Fornecedor *</label>
-                                    <input type="text" class="form-control" id="supplierFormName" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="supplierFormCategory" class="form-label">Categoria *</label>
-                                    <select class="form-select" id="supplierFormCategory" required>
-                                        <option value="">Selecione...</option>
-                                        <option value="buffet">Buffet</option>
-                                        <option value="musica">Música (Banda/DJ)</option>
-                                        <option value="som">Som e Iluminação</option>
-                                        <option value="decoracao">Decoração</option>
-                                        <option value="seguranca">Segurança</option>
-                                        <option value="fotografia">Fotografia e Filmagem</option>
-                                        <option value="outros">Outros</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="supplierFormContact" class="form-label">Contato</label>
-                                    <input type="text" class="form-control" id="supplierFormContact">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="supplierFormPhone" class="form-label">Telefone</label>
-                                    <input type="text" class="form-control" id="supplierFormPhone">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="supplierFormEmail" class="form-label">E-mail</label>
-                                    <input type="email" class="form-control" id="supplierFormEmail">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="supplierFormPrice" class="form-label">Preço Médio (R$)</label>
-                                    <input type="number" class="form-control" id="supplierFormPrice" step="0.01">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="supplierFormObservations" class="form-label">Observações</label>
-                            <textarea class="form-control" id="supplierFormObservations" rows="3"></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="saveSupplier()">Salvar Fornecedor</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Budget Modal -->
-    <div class="modal fade" id="budgetModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="budgetModalTitle">Novo Orçamento</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="budgetForm">
-                        <input type="hidden" id="budgetId">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="budgetFormClient" class="form-label">Cliente *</label>
-                                    <select class="form-select" id="budgetFormClient" required>
-                                        <option value="">Selecione um cliente...</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="budgetFormEvent" class="form-label">Evento *</label>
-                                    <select class="form-select" id="budgetFormEvent" required>
-                                        <option value="">Selecione um evento...</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="budgetFormDate" class="form-label">Data de Validade</label>
-                                    <input type="date" class="form-control" id="budgetFormDate">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="budgetFormTotal" class="form-label">Valor Total (R$)</label>
-                                    <input type="number" class="form-control" id="budgetFormTotal" step="0.01" readonly>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="budgetFormStatus" class="form-label">Status</label>
-                                    <select class="form-select" id="budgetFormStatus">
-                                        <option value="rascunho">Rascunho</option>
-                                        <option value="enviado">Enviado</option>
-                                        <option value="aprovado">Aprovado</option>
-                                        <option value="recusado">Recusado</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Itens do Orçamento</label>
                             <div class="table-responsive">
-                                <table class="table table-sm" id="budgetItemsTable">
-                                    <thead>
-                                        <tr>
-                                            <th>Item</th>
-                                            <th>Quantidade</th>
-                                            <th>Valor Unitário</th>
-                                            <th>Total</th>
-                                            <th>Ações</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="budgetItemsBody">
-                                        <!-- Itens serão adicionados dinamicamente -->
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="3" class="text-end"><strong>Total:</strong></td>
-                                            <td><strong id="budgetTotalValue">R$ 0,00</strong></td>
-                                            <td></td>
-                                        </tr>
-                                    </tfoot>
+                                <table class="table table-hover">
+                                    <thead><tr><th>Data</th><th>Evento</th><th>Cliente</th><th>Status</th></tr></thead>
+                                    <tbody id="upcomingEventsList"></tbody>
                                 </table>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addBudgetItem()">
-                                <i class="fas fa-plus"></i> Adicionar Item
-                            </button>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="budgetFormObservations" class="form-label">Observações</label>
-                            <textarea class="form-control" id="budgetFormObservations" rows="3"></textarea>
-                        </div>
-                    </form>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="saveBudget()">Salvar Orçamento</button>
-                    <button type="button" class="btn btn-pdf" onclick="generateBudgetPDF()" id="budgetPdfBtn" style="display: none;">
-                        <i class="fas fa-file-pdf"></i> Gerar PDF
-                    </button>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">Tarefas Pendentes</div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush" id="pendingTasksList"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Outras seções serão preenchidas dinamicamente pelo JS -->
+        <div id="events" class="content-section" style="display: none;">
+            <div class="d-flex justify-content-between mb-3">
+                <h5>Gerenciamento de Eventos</h5>
+                <button class="btn btn-primary btn-sm" onclick="showEventModal()">+ Novo Evento</button>
+            </div>
+            <div class="card"><div class="card-body"><div class="table-responsive"><table class="table"><thead><tr><th>Data</th><th>Tipo</th><th>Cliente</th><th>Ações</th></tr></thead><tbody id="fullEventsList"></tbody></table></div></div></div>
+        </div>
+
+        <div id="settings" class="content-section" style="display: none;">
+            <div class="card">
+                <div class="card-header">Sincronização com GitHub Gist</div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> A sincronização com Gist permite que você acesse seus dados de qualquer dispositivo. Crie um "Personal Access Token" no GitHub com escopo <strong>gist</strong>.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">GitHub Token</label>
+                        <input type="password" class="form-control" id="gistToken" placeholder="ghp_xxxxxxxxxxxx">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Gist ID (Opcional)</label>
+                        <input type="text" class="form-control" id="gistId" placeholder="ID do Gist existente">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveGistSettings()">Salvar e Sincronizar Agora</button>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">Configurações Gerais</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nome da Empresa</label>
+                        <input type="text" class="form-control" id="companyNameInput">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveCompanySettings()">Salvar Alterações</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Task Modal -->
-    <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="taskModalTitle">Nova Tarefa</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="taskForm">
-                        <input type="hidden" id="taskId">
-                        <div class="mb-3">
-                            <label for="taskFormTitle" class="form-label">Título da Tarefa *</label>
-                            <input type="text" class="form-control" id="taskFormTitle" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="taskFormDescription" class="form-label">Descrição</label>
-                            <textarea class="form-control" id="taskFormDescription" rows="3"></textarea>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="taskFormDueDate" class="form-label">Data de Vencimento</label>
-                                    <input type="date" class="form-control" id="taskFormDueDate">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="taskFormPriority" class="form-label">Prioridade</label>
-                                    <select class="form-select" id="taskFormPriority">
-                                        <option value="baixa">Baixa</option>
-                                        <option value="media" selected>Média</option>
-                                        <option value="alta">Alta</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="taskFormEvent" class="form-label">Associar a Evento</label>
-                            <select class="form-select" id="taskFormEvent">
-                                <option value="">Nenhum evento específico</option>
-                            </select>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="saveTask()">Salvar Tarefa</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Contract Modal -->
-    <div class="modal fade" id="contractModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="contractModalTitle">Novo Contrato</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="contractForm">
-                        <input type="hidden" id="contractId">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="contractFormClient" class="form-label">Cliente *</label>
-                                    <select class="form-select" id="contractFormClient" required>
-                                        <option value="">Selecione um cliente...</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="contractFormEvent" class="form-label">Evento *</label>
-                                    <select class="form-select" id="contractFormEvent" required>
-                                        <option value="">Selecione um evento...</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="contractFormDate" class="form-label">Data do Contrato</label>
-                                    <input type="date" class="form-control" id="contractFormDate">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="contractFormValue" class="form-label">Valor do Contrato (R$)</label>
-                                    <input type="number" class="form-control" id="contractFormValue" step="0.01">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="contractFormStatus" class="form-label">Status</label>
-                                    <select class="form-select" id="contractFormStatus">
-                                        <option value="rascunho">Rascunho</option>
-                                        <option value="assinado">Assinado</option>
-                                        <option value="cancelado">Cancelado</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="contractFormTerms" class="form-label">Termos e Condições</label>
-                            <textarea class="form-control" id="contractFormTerms" rows="5"></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="saveContract()">Salvar Contrato</button>
-                    <button type="button" class="btn btn-pdf" onclick="generateContractPDF()" id="contractPdfBtn" style="display: none;">
-                        <i class="fas fa-file-pdf"></i> Gerar PDF
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Receipt Modal -->
-    <div class="modal fade" id="receiptModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="receiptModalTitle">Novo Recibo</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="receiptForm">
-                        <input type="hidden" id="receiptId">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="receiptFormClient" class="form-label">Cliente *</label>
-                                    <select class="form-select" id="receiptFormClient" required>
-                                        <option value="">Selecione um cliente...</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="receiptFormEvent" class="form-label">Evento</label>
-                                    <select class="form-select" id="receiptFormEvent">
-                                        <option value="">Nenhum evento específico</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="receiptFormDate" class="form-label">Data do Recibo</label>
-                                    <input type="date" class="form-control" id="receiptFormDate">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="receiptFormValue" class="form-label">Valor (R$) *</label>
-                                    <input type="number" class="form-control" id="receiptFormValue" step="0.01" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="receiptFormDescription" class="form-label">Descrição do Pagamento</label>
-                            <textarea class="form-control" id="receiptFormDescription" rows="3"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="receiptFormPaymentMethod" class="form-label">Forma de Pagamento</label>
-                            <select class="form-select" id="receiptFormPaymentMethod">
-                                <option value="dinheiro">Dinheiro</option>
-                                <option value="pix">PIX</option>
-                                <option value="cartao">Cartão</option>
-                                <option value="transferencia">Transferência</option>
-                                <option value="cheque">Cheque</option>
-                            </select>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="saveReceipt()">Salvar Recibo</button>
-                    <button type="button" class="btn btn-pdf" onclick="generateReceiptPDF()" id="receiptPdfBtn" style="display: none;">
-                        <i class="fas fa-file-pdf"></i> Gerar PDF
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Modals -->
+    <div class="modal fade" id="eventModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Evento</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
+        <form id="eventForm">
+            <div class="mb-3"><label class="form-label">Tipo</label><input type="text" class="form-control" id="evType"></div>
+            <div class="mb-3"><label class="form-label">Cliente</label><input type="text" class="form-control" id="evClient"></div>
+            <div class="mb-3"><label class="form-label">Data</label><input type="date" class="form-control" id="evDate"></div>
+            <button type="button" class="btn btn-primary" onclick="addEvent()">Salvar</button>
+        </form>
+    </div></div></div></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Data storage
         let appData = {
@@ -1531,1875 +374,199 @@
             tasks: [],
             settings: {
                 companyName: "CerimonialPro",
-                userName: "Cerimonialista",
-                email: "contato@cerimonialpro.com",
-                phone: "(11) 99999-9999",
-                address: ""
+                gistToken: "",
+                gistId: ""
             }
         };
 
-        // Modal instances
-        let quickEventModal, eventModal, clientModal, supplierModal, budgetModal, taskModal, contractModal, receiptModal;
-
-        // Timeout variables
-        let timeoutTimer;
-        let timeoutWarning = 60000; // 1 minute in milliseconds
-        let isTimeoutActive = false;
-
-        // Initialize the application
+        // UI Initialization
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
+            setupMobileMenu();
+            setupNavigation();
             updateDashboard();
-            setupEventListeners();
-            initializeModals();
-            resetTimeoutTimer();
-            updateCompanyName();
+            checkGistSync();
         });
 
-        // Load data from localStorage
-        function loadData() {
-            const savedData = localStorage.getItem('cerimonialProData');
-            if (savedData) {
-                appData = JSON.parse(savedData);
-            }
+        function setupMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const toggle = document.getElementById('sidebarToggle');
+
+            toggle.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            });
+
+            overlay.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+            });
         }
 
-        // Save data to localStorage
+        function setupNavigation() {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const target = link.getAttribute('data-target');
+                    
+                    document.querySelectorAll('.content-section').forEach(s => s.style.display = 'none');
+                    document.getElementById(target).style.display = 'block';
+                    
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    
+                    document.getElementById('pageTitleDisplay').textContent = link.textContent.trim();
+                    
+                    if (window.innerWidth < 992) {
+                        document.getElementById('sidebar').classList.remove('active');
+                        document.getElementById('sidebarOverlay').classList.remove('active');
+                    }
+                });
+            });
+        }
+
+        // Data Management
+        function loadData() {
+            const saved = localStorage.getItem('cerimonialProData');
+            if (saved) appData = JSON.parse(saved);
+            
+            document.getElementById('companyNameDisplay').textContent = appData.settings.companyName;
+            document.getElementById('companyNameInput').value = appData.settings.companyName;
+            document.getElementById('gistToken').value = appData.settings.gistToken || "";
+            document.getElementById('gistId').value = appData.settings.gistId || "";
+        }
+
         function saveData() {
             localStorage.setItem('cerimonialProData', JSON.stringify(appData));
             updateDashboard();
-            updateCompanyName();
         }
 
-        // Update company name in the UI
-        function updateCompanyName() {
-            const companyName = appData.settings.companyName || "CerimonialPro";
-            document.getElementById('companyNameDisplay').textContent = companyName;
-            document.title = `${companyName} - Sistema Completo`;
+        function saveCompanySettings() {
+            appData.settings.companyName = document.getElementById('companyNameInput').value;
+            document.getElementById('companyNameDisplay').textContent = appData.settings.companyName;
+            saveData();
+            alert('Configurações salvas!');
         }
 
-        // Initialize Bootstrap modals
-        function initializeModals() {
-            quickEventModal = new bootstrap.Modal(document.getElementById('quickEventModal'));
-            eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
-            clientModal = new bootstrap.Modal(document.getElementById('clientModal'));
-            supplierModal = new bootstrap.Modal(document.getElementById('supplierModal'));
-            budgetModal = new bootstrap.Modal(document.getElementById('budgetModal'));
-            taskModal = new bootstrap.Modal(document.getElementById('taskModal'));
-            contractModal = new bootstrap.Modal(document.getElementById('contractModal'));
-            receiptModal = new bootstrap.Modal(document.getElementById('receiptModal'));
+        // Gist Sync Logic
+        function saveGistSettings() {
+            appData.settings.gistToken = document.getElementById('gistToken').value;
+            appData.settings.gistId = document.getElementById('gistId').value;
+            saveData();
+            syncWithGist();
         }
 
-        // Timeout functions
-        function resetTimeoutTimer() {
-            clearTimeout(timeoutTimer);
-            timeoutTimer = setTimeout(showTimeoutWarning, timeoutWarning);
-            isTimeoutActive = false;
-        }
-
-        function showTimeoutWarning() {
-            isTimeoutActive = true;
-            document.getElementById('timeoutModal').style.display = 'flex';
-        }
-
-        function continueSession() {
-            document.getElementById('timeoutModal').style.display = 'none';
-            resetTimeoutTimer();
-        }
-
-        function logoutWithBackup() {
-            // Create automatic backup before closing
-            const dataStr = JSON.stringify(appData, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            
-            const exportFileDefaultName = `cerimonialpro-backup-${new Date().toISOString().split('T')[0]}.json`;
-            
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            document.body.appendChild(linkElement);
-            linkElement.click();
-            document.body.removeChild(linkElement);
-            
-            // Close the window/tab
-            setTimeout(() => {
-                window.close();
-                // If window.close doesn't work (due to browser restrictions), show a message
-                alert('Backup criado com sucesso! Você pode fechar esta aba manualmente.');
-            }, 1000);
-        }
-
-        // Event listeners for user activity
-        function setupEventListeners() {
-            // Navigation
-            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const target = this.getAttribute('data-target');
-                    showSection(target);
-                    resetTimeoutTimer();
-                });
-            });
-            
-            // Settings form
-            document.getElementById('settingsForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                saveSettings();
-                resetTimeoutTimer();
-            });
-            
-            // User activity events
-            document.addEventListener('mousemove', resetTimeoutTimer);
-            document.addEventListener('keypress', resetTimeoutTimer);
-            document.addEventListener('click', resetTimeoutTimer);
-            document.addEventListener('scroll', resetTimeoutTimer);
-        }
-
-        // Update dashboard statistics
-        function updateDashboard() {
-            document.getElementById('activeEventsCount').textContent = appData.events.filter(e => 
-                e.status === 'planejamento' || e.status === 'confirmado').length;
-            document.getElementById('clientsCount').textContent = appData.clients.length;
-            document.getElementById('suppliersCount').textContent = appData.suppliers.length;
-            
-            // Calculate monthly revenue (simplified)
-            const currentMonth = new Date().getMonth();
-            const monthlyEvents = appData.events.filter(e => {
-                const eventDate = new Date(e.date);
-                return eventDate.getMonth() === currentMonth && e.status === 'confirmado';
-            });
-            const revenue = monthlyEvents.reduce((sum, event) => sum + (event.budget || 0), 0);
-            document.getElementById('monthlyRevenue').textContent = `R$ ${revenue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            
-            updateUpcomingEvents();
-            updatePendingTasks();
-        }
-
-        // Update upcoming events list
-        function updateUpcomingEvents() {
-            const upcomingEventsList = document.getElementById('upcomingEventsList');
-            const upcomingEvents = appData.events
-                .filter(e => e.status === 'planejamento' || e.status === 'confirmado')
-                .sort((a, b) => new Date(a.date) - new Date(b.date))
-                .slice(0, 3);
-            
-            if (upcomingEvents.length === 0) {
-                upcomingEventsList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-calendar-plus"></i>
-                        <h5>Nenhum evento próximo</h5>
-                        <p>Cadastre seus primeiros eventos para vê-los aqui.</p>
-                        <button class="btn btn-primary" onclick="showQuickEventModal()">Cadastrar Evento</button>
-                    </div>
-                `;
+        async function syncWithGist() {
+            const token = appData.settings.gistToken;
+            if (!token) {
+                alert("Por favor, configure o GitHub Token nas configurações.");
                 return;
             }
-            
-            let html = '<div class="event-timeline">';
-            upcomingEvents.forEach(event => {
-                const eventDate = new Date(event.date);
-                const formattedDate = eventDate.toLocaleDateString('pt-BR');
-                html += `
-                    <div class="timeline-item">
-                        <h6>${event.type === 'casamento' ? 'Casamento' : 
-                              event.type === 'aniversario' ? 'Aniversário' : 
-                              event.type === 'formatura' ? 'Formatura' : 
-                              event.type === 'corporativo' ? 'Evento Corporativo' : 'Evento'} ${event.clientName || ''}</h6>
-                        <p class="mb-1"><i class="far fa-calendar"></i> ${formattedDate} ${event.time ? `- ${event.time}` : ''}</p>
-                        ${event.location ? `<p class="mb-1"><i class="fas fa-map-marker-alt"></i> ${event.location}</p>` : ''}
-                        <span class="badge badge-event">${event.type === 'casamento' ? 'Casamento' : 
-                              event.type === 'aniversario' ? 'Aniversário' : 
-                              event.type === 'formatura' ? 'Formatura' : 
-                              event.type === 'corporativo' ? 'Corporativo' : 'Outro'}</span>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            upcomingEventsList.innerHTML = html;
-        }
 
-        // Update pending tasks list
-        function updatePendingTasks() {
-            const pendingTasksList = document.getElementById('pendingTasksList');
-            const pendingTasks = appData.tasks.filter(t => !t.completed).slice(0, 3);
+            const statusEl = document.getElementById('syncStatus');
+            statusEl.className = "sync-status syncing";
+            statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
             
-            if (pendingTasks.length === 0) {
-                pendingTasksList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-tasks"></i>
-                        <h5>Nenhuma tarefa pendente</h5>
-                        <p>Adicione tarefas para organizar seu trabalho.</p>
-                        <button class="btn btn-primary" onclick="showTaskModal()">Adicionar Tarefa</button>
-                    </div>
-                `;
-                return;
-            }
+            const fileName = "cerimonial_pro_data.json";
+            const content = JSON.stringify(appData, null, 2);
             
-            let html = '<div class="list-group">';
-            pendingTasks.forEach(task => {
-                const priorityClass = {
-                    'alta': 'bg-danger',
-                    'media': 'bg-warning',
-                    'baixa': 'bg-secondary'
-                }[task.priority] || 'bg-secondary';
-                
-                html += `
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1">${task.title}</h6>
-                            <small class="text-muted">Prazo: ${task.dueDate}</small>
-                        </div>
-                        <span class="badge ${priorityClass}">${task.priority}</span>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            pendingTasksList.innerHTML = html;
-        }
+            try {
+                let url = "https://api.github.com/gists";
+                let method = "POST";
+                let gistId = appData.settings.gistId;
 
-        // Show a specific section
-        function showSection(sectionId) {
-            // Hide all sections
-            document.querySelectorAll('.content-section').forEach(section => {
-                section.style.display = 'none';
-            });
-            
-            // Show the selected section
-            document.getElementById(sectionId).style.display = 'block';
-            
-            // Update page title
-            const pageTitle = document.getElementById('pageTitle');
-            const sectionTitles = {
-                'dashboard': 'Dashboard',
-                'events': 'Eventos',
-                'clients': 'Clientes',
-                'suppliers': 'Fornecedores',
-                'budgets': 'Orçamentos',
-                'contracts': 'Contratos',
-                'receipts': 'Recibos',
-                'reports': 'Relatórios',
-                'settings': 'Configurações'
-            };
-            pageTitle.textContent = sectionTitles[sectionId] || 'CerimonialPro';
-            
-            // Update active nav link
-            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-            document.querySelector(`.sidebar .nav-link[data-target="${sectionId}"]`).classList.add('active');
-            
-            // Load section-specific data
-            if (sectionId === 'events') {
-                loadEventsList();
-            } else if (sectionId === 'clients') {
-                loadClientsList();
-            } else if (sectionId === 'suppliers') {
-                loadSuppliersList();
-            } else if (sectionId === 'budgets') {
-                loadBudgetsList();
-            } else if (sectionId === 'contracts') {
-                loadContractsList();
-            } else if (sectionId === 'receipts') {
-                loadReceiptsList();
-            } else if (sectionId === 'reports') {
-                loadReports();
-            } else if (sectionId === 'settings') {
-                loadSettings();
-            }
-        }
-
-        // Show quick event modal
-        function showQuickEventModal() {
-            document.getElementById('quickEventForm').reset();
-            quickEventModal.show();
-        }
-
-        // Save quick event
-        function saveQuickEvent() {
-            const eventType = document.getElementById('eventType').value;
-            const clientName = document.getElementById('clientName').value;
-            const eventDate = document.getElementById('eventDate').value;
-            const eventLocation = document.getElementById('eventLocation').value;
-            const guestsNumber = document.getElementById('guestsNumber').value;
-            const budget = document.getElementById('budget').value;
-            const observations = document.getElementById('observations').value;
-            
-            const newEvent = {
-                id: Date.now().toString(),
-                type: eventType,
-                clientName: clientName,
-                date: eventDate,
-                location: eventLocation,
-                guests: guestsNumber ? parseInt(guestsNumber) : null,
-                budget: budget ? parseFloat(budget) : null,
-                observations: observations,
-                status: 'planejamento',
-                createdAt: new Date().toISOString()
-            };
-            
-            appData.events.push(newEvent);
-            saveData();
-            
-            // Add client if not exists
-            if (clientName && !appData.clients.find(c => c.name === clientName)) {
-                appData.clients.push({
-                    id: Date.now().toString() + '_client',
-                    name: clientName,
-                    type: eventType === 'casamento' ? 'casal' : 'individual',
-                    createdAt: new Date().toISOString()
-                });
-            }
-            
-            alert(`Evento "${eventType}" para ${clientName} cadastrado com sucesso!`);
-            quickEventModal.hide();
-            updateDashboard();
-        }
-
-        // Show event modal
-        function showEventModal(eventId = null) {
-            const eventModalTitle = document.getElementById('eventModalTitle');
-            
-            if (eventId) {
-                // Edit existing event
-                eventModalTitle.textContent = 'Editar Evento';
-                const event = appData.events.find(e => e.id === eventId);
-                if (event) {
-                    document.getElementById('eventId').value = event.id;
-                    document.getElementById('eventFormType').value = event.type;
-                    document.getElementById('eventFormClient').value = event.clientId || '';
-                    document.getElementById('eventFormDate').value = event.date;
-                    document.getElementById('eventFormTime').value = event.time || '';
-                    document.getElementById('eventFormLocation').value = event.location || '';
-                    document.getElementById('eventFormGuests').value = event.guests || '';
-                    document.getElementById('eventFormBudget').value = event.budget || '';
-                    document.getElementById('eventFormStatus').value = event.status;
-                    document.getElementById('eventFormDescription').value = event.description || '';
-                    document.getElementById('eventFormObservations').value = event.observations || '';
+                if (gistId) {
+                    url += "/" + gistId;
+                    method = "PATCH";
                 }
-            } else {
-                // New event
-                eventModalTitle.textContent = 'Novo Evento';
-                document.getElementById('eventForm').reset();
-                document.getElementById('eventId').value = '';
-            }
-            
-            // Populate clients dropdown
-            const clientSelect = document.getElementById('eventFormClient');
-            clientSelect.innerHTML = '<option value="">Selecione um cliente...</option>';
-            appData.clients.forEach(client => {
-                const option = document.createElement('option');
-                option.value = client.id;
-                option.textContent = client.name;
-                clientSelect.appendChild(option);
-            });
-            
-            eventModal.show();
-        }
 
-        // Save event
-        function saveEvent() {
-            const eventId = document.getElementById('eventId').value;
-            const eventType = document.getElementById('eventFormType').value;
-            const clientId = document.getElementById('eventFormClient').value;
-            const eventDate = document.getElementById('eventFormDate').value;
-            const eventTime = document.getElementById('eventFormTime').value;
-            const eventLocation = document.getElementById('eventFormLocation').value;
-            const guestsNumber = document.getElementById('eventFormGuests').value;
-            const budget = document.getElementById('eventFormBudget').value;
-            const status = document.getElementById('eventFormStatus').value;
-            const description = document.getElementById('eventFormDescription').value;
-            const observations = document.getElementById('eventFormObservations').value;
-            
-            const client = appData.clients.find(c => c.id === clientId);
-            const clientName = client ? client.name : '';
-            
-            const eventData = {
-                type: eventType,
-                clientId: clientId,
-                clientName: clientName,
-                date: eventDate,
-                time: eventTime,
-                location: eventLocation,
-                guests: guestsNumber ? parseInt(guestsNumber) : null,
-                budget: budget ? parseFloat(budget) : null,
-                status: status,
-                description: description,
-                observations: observations,
-                updatedAt: new Date().toISOString()
-            };
-            
-            if (eventId) {
-                // Update existing event
-                const index = appData.events.findIndex(e => e.id === eventId);
-                if (index !== -1) {
-                    appData.events[index] = { ...appData.events[index], ...eventData };
-                }
-            } else {
-                // Create new event
-                eventData.id = Date.now().toString();
-                eventData.createdAt = new Date().toISOString();
-                appData.events.push(eventData);
-            }
-            
-            saveData();
-            eventModal.hide();
-            loadEventsList();
-            alert('Evento salvo com sucesso!');
-        }
-
-        // Load events list
-        function loadEventsList() {
-            const eventsList = document.getElementById('eventsList');
-            
-            if (appData.events.length === 0) {
-                eventsList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-calendar-plus"></i>
-                        <h5>Nenhum evento cadastrado</h5>
-                        <p>Comece cadastrando seu primeiro evento.</p>
-                        <button class="btn btn-primary" onclick="showEventModal()">Cadastrar Evento</button>
-                    </div>
-                `;
-                return;
-            }
-            
-            let html = `
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Tipo</th>
-                                <th>Cliente</th>
-                                <th>Data</th>
-                                <th>Local</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-            
-            appData.events.forEach(event => {
-                const eventDate = new Date(event.date);
-                const formattedDate = eventDate.toLocaleDateString('pt-BR');
-                
-                html += `
-                    <tr>
-                        <td>${event.type === 'casamento' ? 'Casamento' : 
-                              event.type === 'aniversario' ? 'Aniversário' : 
-                              event.type === 'formatura' ? 'Formatura' : 
-                              event.type === 'corporativo' ? 'Corporativo' : 'Outro'}</td>
-                        <td>${event.clientName || 'N/A'}</td>
-                        <td>${formattedDate}</td>
-                        <td>${event.location || 'N/A'}</td>
-                        <td><span class="badge ${getStatusBadgeClass(event.status)}">${getStatusText(event.status)}</span></td>
-                        <td class="action-buttons">
-                            <button class="btn btn-sm btn-outline-primary" onclick="showEventModal('${event.id}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteEvent('${event.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            
-            eventsList.innerHTML = html;
-        }
-
-        // Show client modal
-        function showClientModal(clientId = null) {
-            const clientModalTitle = document.getElementById('clientModalTitle');
-            
-            if (clientId) {
-                // Edit existing client
-                clientModalTitle.textContent = 'Editar Cliente';
-                const client = appData.clients.find(c => c.id === clientId);
-                if (client) {
-                    document.getElementById('clientId').value = client.id;
-                    document.getElementById('clientFormType').value = client.type;
-                    document.getElementById('clientFormName').value = client.name;
-                    document.getElementById('clientFormEmail').value = client.email || '';
-                    document.getElementById('clientFormPhone').value = client.phone || '';
-                    document.getElementById('clientFormCpfCnpj').value = client.cpfCnpj || '';
-                    document.getElementById('clientFormAddress').value = client.address || '';
-                }
-            } else {
-                // New client
-                clientModalTitle.textContent = 'Novo Cliente';
-                document.getElementById('clientForm').reset();
-                document.getElementById('clientId').value = '';
-            }
-            
-            clientModal.show();
-        }
-
-        // Save client
-        function saveClient() {
-            const clientId = document.getElementById('clientId').value;
-            const clientType = document.getElementById('clientFormType').value;
-            const clientName = document.getElementById('clientFormName').value;
-            const clientEmail = document.getElementById('clientFormEmail').value;
-            const clientPhone = document.getElementById('clientFormPhone').value;
-            const clientCpfCnpj = document.getElementById('clientFormCpfCnpj').value;
-            const clientAddress = document.getElementById('clientFormAddress').value;
-            
-            const clientData = {
-                type: clientType,
-                name: clientName,
-                email: clientEmail,
-                phone: clientPhone,
-                cpfCnpj: clientCpfCnpj,
-                address: clientAddress,
-                updatedAt: new Date().toISOString()
-            };
-            
-            if (clientId) {
-                // Update existing client
-                const index = appData.clients.findIndex(c => c.id === clientId);
-                if (index !== -1) {
-                    appData.clients[index] = { ...appData.clients[index], ...clientData };
-                }
-            } else {
-                // Create new client
-                clientData.id = Date.now().toString();
-                clientData.createdAt = new Date().toISOString();
-                appData.clients.push(clientData);
-            }
-            
-            saveData();
-            clientModal.hide();
-            loadClientsList();
-            alert('Cliente salvo com sucesso!');
-        }
-
-        // Load clients list
-        function loadClientsList() {
-            const clientsList = document.getElementById('clientsList');
-            
-            if (appData.clients.length === 0) {
-                clientsList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-users"></i>
-                        <h5>Nenhum cliente cadastrado</h5>
-                        <p>Comece cadastrando seu primeiro cliente.</p>
-                        <button class="btn btn-primary" onclick="showClientModal()">Cadastrar Cliente</button>
-                    </div>
-                `;
-                return;
-            }
-            
-            let html = `
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Tipo</th>
-                                <th>E-mail</th>
-                                <th>Telefone</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-            
-            appData.clients.forEach(client => {
-                html += `
-                    <tr>
-                        <td>${client.name}</td>
-                        <td>${client.type === 'casal' ? 'Casal' : 
-                              client.type === 'individual' ? 'Individual' : 
-                              client.type === 'empresa' ? 'Empresa' : 'Outro'}</td>
-                        <td>${client.email || 'N/A'}</td>
-                        <td>${client.phone || 'N/A'}</td>
-                        <td class="action-buttons">
-                            <button class="btn btn-sm btn-outline-primary" onclick="showClientModal('${client.id}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteClient('${client.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            
-            clientsList.innerHTML = html;
-        }
-
-        // Show supplier modal
-        function showSupplierModal(supplierId = null) {
-            const supplierModalTitle = document.getElementById('supplierModalTitle');
-            
-            if (supplierId) {
-                // Edit existing supplier
-                supplierModalTitle.textContent = 'Editar Fornecedor';
-                const supplier = appData.suppliers.find(s => s.id === supplierId);
-                if (supplier) {
-                    document.getElementById('supplierId').value = supplier.id;
-                    document.getElementById('supplierFormName').value = supplier.name;
-                    document.getElementById('supplierFormCategory').value = supplier.category;
-                    document.getElementById('supplierFormContact').value = supplier.contact || '';
-                    document.getElementById('supplierFormPhone').value = supplier.phone || '';
-                    document.getElementById('supplierFormEmail').value = supplier.email || '';
-                    document.getElementById('supplierFormPrice').value = supplier.price || '';
-                    document.getElementById('supplierFormObservations').value = supplier.observations || '';
-                }
-            } else {
-                // New supplier
-                supplierModalTitle.textContent = 'Novo Fornecedor';
-                document.getElementById('supplierForm').reset();
-                document.getElementById('supplierId').value = '';
-            }
-            
-            supplierModal.show();
-        }
-
-        // Save supplier
-        function saveSupplier() {
-            const supplierId = document.getElementById('supplierId').value;
-            const supplierName = document.getElementById('supplierFormName').value;
-            const supplierCategory = document.getElementById('supplierFormCategory').value;
-            const supplierContact = document.getElementById('supplierFormContact').value;
-            const supplierPhone = document.getElementById('supplierFormPhone').value;
-            const supplierEmail = document.getElementById('supplierFormEmail').value;
-            const supplierPrice = document.getElementById('supplierFormPrice').value;
-            const supplierObservations = document.getElementById('supplierFormObservations').value;
-            
-            const supplierData = {
-                name: supplierName,
-                category: supplierCategory,
-                contact: supplierContact,
-                phone: supplierPhone,
-                email: supplierEmail,
-                price: supplierPrice ? parseFloat(supplierPrice) : null,
-                observations: supplierObservations,
-                updatedAt: new Date().toISOString()
-            };
-            
-            if (supplierId) {
-                // Update existing supplier
-                const index = appData.suppliers.findIndex(s => s.id === supplierId);
-                if (index !== -1) {
-                    appData.suppliers[index] = { ...appData.suppliers[index], ...supplierData };
-                }
-            } else {
-                // Create new supplier
-                supplierData.id = Date.now().toString();
-                supplierData.createdAt = new Date().toISOString();
-                appData.suppliers.push(supplierData);
-            }
-            
-            saveData();
-            supplierModal.hide();
-            loadSuppliersList();
-            alert('Fornecedor salvo com sucesso!');
-        }
-
-        // Load suppliers list
-        function loadSuppliersList() {
-            const suppliersList = document.getElementById('suppliersList');
-            
-            if (appData.suppliers.length === 0) {
-                suppliersList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-handshake"></i>
-                        <h5>Nenhum fornecedor cadastrado</h5>
-                        <p>Comece cadastrando seu primeiro fornecedor.</p>
-                        <button class="btn btn-primary" onclick="showSupplierModal()">Cadastrar Fornecedor</button>
-                    </div>
-                `;
-                return;
-            }
-            
-            let html = `
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Categoria</th>
-                                <th>Contato</th>
-                                <th>Telefone</th>
-                                <th>Preço Médio</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-            
-            appData.suppliers.forEach(supplier => {
-                html += `
-                    <tr>
-                        <td>${supplier.name}</td>
-                        <td><span class="supplier-category">${supplier.category}</span></td>
-                        <td>${supplier.contact || 'N/A'}</td>
-                        <td>${supplier.phone || 'N/A'}</td>
-                        <td>${supplier.price ? `R$ ${supplier.price.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : 'N/A'}</td>
-                        <td class="action-buttons">
-                            <button class="btn btn-sm btn-outline-primary" onclick="showSupplierModal('${supplier.id}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteSupplier('${supplier.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            
-            suppliersList.innerHTML = html;
-        }
-
-        // Show budget modal
-        function showBudgetModal(budgetId = null) {
-            const budgetModalTitle = document.getElementById('budgetModalTitle');
-            
-            if (budgetId) {
-                // Edit existing budget
-                budgetModalTitle.textContent = 'Editar Orçamento';
-                const budget = appData.budgets.find(b => b.id === budgetId);
-                if (budget) {
-                    document.getElementById('budgetId').value = budget.id;
-                    document.getElementById('budgetFormClient').value = budget.clientId;
-                    document.getElementById('budgetFormEvent').value = budget.eventId;
-                    document.getElementById('budgetFormDate').value = budget.validUntil;
-                    document.getElementById('budgetFormTotal').value = budget.total;
-                    document.getElementById('budgetFormStatus').value = budget.status;
-                    document.getElementById('budgetFormObservations').value = budget.observations || '';
-                    
-                    // Load budget items
-                    const budgetItemsBody = document.getElementById('budgetItemsBody');
-                    budgetItemsBody.innerHTML = '';
-                    if (budget.items && budget.items.length > 0) {
-                        budget.items.forEach((item, index) => {
-                            addBudgetItemToTable(item, index);
-                        });
-                    }
-                    updateBudgetTotal();
-                    
-                    // Show PDF button
-                    document.getElementById('budgetPdfBtn').style.display = 'inline-block';
-                }
-            } else {
-                // New budget
-                budgetModalTitle.textContent = 'Novo Orçamento';
-                document.getElementById('budgetForm').reset();
-                document.getElementById('budgetId').value = '';
-                document.getElementById('budgetItemsBody').innerHTML = '';
-                document.getElementById('budgetTotalValue').textContent = 'R$ 0,00';
-                
-                // Hide PDF button for new budgets
-                document.getElementById('budgetPdfBtn').style.display = 'none';
-            }
-            
-            // Populate clients and events dropdowns
-            const clientSelect = document.getElementById('budgetFormClient');
-            clientSelect.innerHTML = '<option value="">Selecione um cliente...</option>';
-            appData.clients.forEach(client => {
-                const option = document.createElement('option');
-                option.value = client.id;
-                option.textContent = client.name;
-                clientSelect.appendChild(option);
-            });
-            
-            const eventSelect = document.getElementById('budgetFormEvent');
-            eventSelect.innerHTML = '<option value="">Selecione um evento...</option>';
-            appData.events.forEach(event => {
-                const option = document.createElement('option');
-                option.value = event.id;
-                option.textContent = `${event.type} - ${event.clientName}`;
-                eventSelect.appendChild(option);
-            });
-            
-            budgetModal.show();
-        }
-
-        // Add budget item
-        function addBudgetItem() {
-            const itemCount = document.getElementById('budgetItemsBody').children.length;
-            addBudgetItemToTable({}, itemCount);
-        }
-
-        // Add budget item to table
-        function addBudgetItemToTable(item, index) {
-            const budgetItemsBody = document.getElementById('budgetItemsBody');
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>
-                    <input type="text" class="form-control form-control-sm" value="${item.description || ''}" onchange="updateBudgetTotal()">
-                </td>
-                <td>
-                    <input type="number" class="form-control form-control-sm" value="${item.quantity || 1}" min="1" onchange="updateBudgetTotal()">
-                </td>
-                <td>
-                    <input type="number" class="form-control form-control-sm" value="${item.unitPrice || 0}" step="0.01" min="0" onchange="updateBudgetTotal()">
-                </td>
-                <td>
-                    <input type="text" class="form-control form-control-sm" value="R$ 0,00" readonly>
-                </td>
-                <td>
-                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.parentElement.parentElement.remove(); updateBudgetTotal()">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            `;
-            budgetItemsBody.appendChild(row);
-            updateBudgetTotal();
-        }
-
-        // Update budget total
-        function updateBudgetTotal() {
-            const rows = document.getElementById('budgetItemsBody').children;
-            let total = 0;
-            
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                const quantity = parseFloat(row.children[1].children[0].value) || 0;
-                const unitPrice = parseFloat(row.children[2].children[0].value) || 0;
-                const itemTotal = quantity * unitPrice;
-                
-                row.children[3].children[0].value = `R$ ${itemTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-                total += itemTotal;
-            }
-            
-            document.getElementById('budgetFormTotal').value = total;
-            document.getElementById('budgetTotalValue').textContent = `R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-        }
-
-        // Save budget
-        function saveBudget() {
-            const budgetId = document.getElementById('budgetId').value;
-            const clientId = document.getElementById('budgetFormClient').value;
-            const eventId = document.getElementById('budgetFormEvent').value;
-            const validUntil = document.getElementById('budgetFormDate').value;
-            const total = parseFloat(document.getElementById('budgetFormTotal').value) || 0;
-            const status = document.getElementById('budgetFormStatus').value;
-            const observations = document.getElementById('budgetFormObservations').value;
-            
-            // Collect budget items
-            const items = [];
-            const rows = document.getElementById('budgetItemsBody').children;
-            
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                const description = row.children[0].children[0].value;
-                const quantity = parseFloat(row.children[1].children[0].value) || 0;
-                const unitPrice = parseFloat(row.children[2].children[0].value) || 0;
-                
-                if (description && quantity > 0 && unitPrice > 0) {
-                    items.push({
-                        description: description,
-                        quantity: quantity,
-                        unitPrice: unitPrice,
-                        total: quantity * unitPrice
-                    });
-                }
-            }
-            
-            const budgetData = {
-                clientId: clientId,
-                eventId: eventId,
-                validUntil: validUntil,
-                total: total,
-                status: status,
-                items: items,
-                observations: observations,
-                updatedAt: new Date().toISOString()
-            };
-            
-            if (budgetId) {
-                // Update existing budget
-                const index = appData.budgets.findIndex(b => b.id === budgetId);
-                if (index !== -1) {
-                    appData.budgets[index] = { ...appData.budgets[index], ...budgetData };
-                }
-            } else {
-                // Create new budget
-                budgetData.id = Date.now().toString();
-                budgetData.createdAt = new Date().toISOString();
-                budgetData.number = `ORC-${new Date().getFullYear()}-${appData.budgets.length + 1}`;
-                appData.budgets.push(budgetData);
-            }
-            
-            saveData();
-            budgetModal.hide();
-            loadBudgetsList();
-            alert('Orçamento salvo com sucesso!');
-        }
-
-        // Load budgets list
-        function loadBudgetsList() {
-            const budgetsList = document.getElementById('budgetsList');
-            
-            if (appData.budgets.length === 0) {
-                budgetsList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                        <h5>Nenhum orçamento cadastrado</h5>
-                        <p>Comece criando seu primeiro orçamento.</p>
-                        <button class="btn btn-primary" onclick="showBudgetModal()">Criar Orçamento</button>
-                    </div>
-                `;
-                return;
-            }
-            
-            let html = `
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Número</th>
-                                <th>Cliente</th>
-                                <th>Evento</th>
-                                <th>Valor Total</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-            
-            appData.budgets.forEach(budget => {
-                const client = appData.clients.find(c => c.id === budget.clientId);
-                const event = appData.events.find(e => e.id === budget.eventId);
-                
-                html += `
-                    <tr>
-                        <td>${budget.number || 'N/A'}</td>
-                        <td>${client ? client.name : 'N/A'}</td>
-                        <td>${event ? `${event.type} - ${event.clientName}` : 'N/A'}</td>
-                        <td>R$ ${budget.total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                        <td><span class="badge ${getBudgetStatusBadgeClass(budget.status)}">${getBudgetStatusText(budget.status)}</span></td>
-                        <td class="action-buttons">
-                            <button class="btn btn-sm btn-outline-primary" onclick="showBudgetModal('${budget.id}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteBudget('${budget.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                            <button class="btn btn-sm btn-pdf" onclick="generateBudgetPDF('${budget.id}')">
-                                <i class="fas fa-file-pdf"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            
-            budgetsList.innerHTML = html;
-        }
-
-        // Show task modal
-        function showTaskModal(taskId = null) {
-            const taskModalTitle = document.getElementById('taskModalTitle');
-            
-            if (taskId) {
-                // Edit existing task
-                taskModalTitle.textContent = 'Editar Tarefa';
-                const task = appData.tasks.find(t => t.id === taskId);
-                if (task) {
-                    document.getElementById('taskId').value = task.id;
-                    document.getElementById('taskFormTitle').value = task.title;
-                    document.getElementById('taskFormDescription').value = task.description || '';
-                    document.getElementById('taskFormDueDate').value = task.dueDate || '';
-                    document.getElementById('taskFormPriority').value = task.priority;
-                    document.getElementById('taskFormEvent').value = task.eventId || '';
-                }
-            } else {
-                // New task
-                taskModalTitle.textContent = 'Nova Tarefa';
-                document.getElementById('taskForm').reset();
-                document.getElementById('taskId').value = '';
-            }
-            
-            // Populate events dropdown
-            const eventSelect = document.getElementById('taskFormEvent');
-            eventSelect.innerHTML = '<option value="">Nenhum evento específico</option>';
-            appData.events.forEach(event => {
-                const option = document.createElement('option');
-                option.value = event.id;
-                option.textContent = `${event.type} - ${event.clientName}`;
-                eventSelect.appendChild(option);
-            });
-            
-            taskModal.show();
-        }
-
-        // Save task
-        function saveTask() {
-            const taskId = document.getElementById('taskId').value;
-            const taskTitle = document.getElementById('taskFormTitle').value;
-            const taskDescription = document.getElementById('taskFormDescription').value;
-            const taskDueDate = document.getElementById('taskFormDueDate').value;
-            const taskPriority = document.getElementById('taskFormPriority').value;
-            const taskEventId = document.getElementById('taskFormEvent').value;
-            
-            const taskData = {
-                title: taskTitle,
-                description: taskDescription,
-                dueDate: taskDueDate,
-                priority: taskPriority,
-                eventId: taskEventId,
-                completed: false,
-                updatedAt: new Date().toISOString()
-            };
-            
-            if (taskId) {
-                // Update existing task
-                const index = appData.tasks.findIndex(t => t.id === taskId);
-                if (index !== -1) {
-                    appData.tasks[index] = { ...appData.tasks[index], ...taskData };
-                }
-            } else {
-                // Create new task
-                taskData.id = Date.now().toString();
-                taskData.createdAt = new Date().toISOString();
-                appData.tasks.push(taskData);
-            }
-            
-            saveData();
-            taskModal.hide();
-            updateDashboard();
-            alert('Tarefa salva com sucesso!');
-        }
-
-        // Show contract modal
-        function showContractModal(contractId = null) {
-            const contractModalTitle = document.getElementById('contractModalTitle');
-            
-            if (contractId) {
-                // Edit existing contract
-                contractModalTitle.textContent = 'Editar Contrato';
-                const contract = appData.contracts.find(c => c.id === contractId);
-                if (contract) {
-                    document.getElementById('contractId').value = contract.id;
-                    document.getElementById('contractFormClient').value = contract.clientId;
-                    document.getElementById('contractFormEvent').value = contract.eventId;
-                    document.getElementById('contractFormDate').value = contract.contractDate;
-                    document.getElementById('contractFormValue').value = contract.value;
-                    document.getElementById('contractFormStatus').value = contract.status;
-                    document.getElementById('contractFormTerms').value = contract.terms || '';
-                    
-                    // Show PDF button
-                    document.getElementById('contractPdfBtn').style.display = 'inline-block';
-                }
-            } else {
-                // New contract
-                contractModalTitle.textContent = 'Novo Contrato';
-                document.getElementById('contractForm').reset();
-                document.getElementById('contractId').value = '';
-                
-                // Hide PDF button for new contracts
-                document.getElementById('contractPdfBtn').style.display = 'none';
-            }
-            
-            // Populate clients and events dropdowns
-            const clientSelect = document.getElementById('contractFormClient');
-            clientSelect.innerHTML = '<option value="">Selecione um cliente...</option>';
-            appData.clients.forEach(client => {
-                const option = document.createElement('option');
-                option.value = client.id;
-                option.textContent = client.name;
-                clientSelect.appendChild(option);
-            });
-            
-            const eventSelect = document.getElementById('contractFormEvent');
-            eventSelect.innerHTML = '<option value="">Selecione um evento...</option>';
-            appData.events.forEach(event => {
-                const option = document.createElement('option');
-                option.value = event.id;
-                option.textContent = `${event.type} - ${event.clientName}`;
-                eventSelect.appendChild(option);
-            });
-            
-            contractModal.show();
-        }
-
-        // Save contract
-        function saveContract() {
-            const contractId = document.getElementById('contractId').value;
-            const clientId = document.getElementById('contractFormClient').value;
-            const eventId = document.getElementById('contractFormEvent').value;
-            const contractDate = document.getElementById('contractFormDate').value;
-            const contractValue = document.getElementById('contractFormValue').value;
-            const contractStatus = document.getElementById('contractFormStatus').value;
-            const contractTerms = document.getElementById('contractFormTerms').value;
-            
-            const contractData = {
-                clientId: clientId,
-                eventId: eventId,
-                contractDate: contractDate,
-                value: contractValue ? parseFloat(contractValue) : null,
-                status: contractStatus,
-                terms: contractTerms,
-                updatedAt: new Date().toISOString()
-            };
-            
-            if (contractId) {
-                // Update existing contract
-                const index = appData.contracts.findIndex(c => c.id === contractId);
-                if (index !== -1) {
-                    appData.contracts[index] = { ...appData.contracts[index], ...contractData };
-                }
-            } else {
-                // Create new contract
-                contractData.id = Date.now().toString();
-                contractData.createdAt = new Date().toISOString();
-                contractData.number = `CTR-${new Date().getFullYear()}-${appData.contracts.length + 1}`;
-                appData.contracts.push(contractData);
-            }
-            
-            saveData();
-            contractModal.hide();
-            loadContractsList();
-            alert('Contrato salvo com sucesso!');
-        }
-
-        // Load contracts list
-        function loadContractsList() {
-            const contractsList = document.getElementById('contractsList');
-            
-            if (appData.contracts.length === 0) {
-                contractsList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-file-contract"></i>
-                        <h5>Nenhum contrato cadastrado</h5>
-                        <p>Comece criando seu primeiro contrato.</p>
-                        <button class="btn btn-primary" onclick="showContractModal()">Criar Contrato</button>
-                    </div>
-                `;
-                return;
-            }
-            
-            let html = `
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Número</th>
-                                <th>Cliente</th>
-                                <th>Evento</th>
-                                <th>Data</th>
-                                <th>Valor</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-            
-            appData.contracts.forEach(contract => {
-                const client = appData.clients.find(c => c.id === contract.clientId);
-                const event = appData.events.find(e => e.id === contract.eventId);
-                const contractDate = new Date(contract.contractDate);
-                const formattedDate = contractDate.toLocaleDateString('pt-BR');
-                
-                html += `
-                    <tr>
-                        <td>${contract.number || 'N/A'}</td>
-                        <td>${client ? client.name : 'N/A'}</td>
-                        <td>${event ? `${event.type} - ${event.clientName}` : 'N/A'}</td>
-                        <td>${formattedDate}</td>
-                        <td>${contract.value ? `R$ ${contract.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : 'N/A'}</td>
-                        <td><span class="badge ${getContractStatusBadgeClass(contract.status)}">${getContractStatusText(contract.status)}</span></td>
-                        <td class="action-buttons">
-                            <button class="btn btn-sm btn-outline-primary" onclick="showContractModal('${contract.id}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteContract('${contract.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                            <button class="btn btn-sm btn-pdf" onclick="generateContractPDF('${contract.id}')">
-                                <i class="fas fa-file-pdf"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            
-            contractsList.innerHTML = html;
-        }
-
-        // Show receipt modal
-        function showReceiptModal(receiptId = null) {
-            const receiptModalTitle = document.getElementById('receiptModalTitle');
-            
-            if (receiptId) {
-                // Edit existing receipt
-                receiptModalTitle.textContent = 'Editar Recibo';
-                const receipt = appData.receipts.find(r => r.id === receiptId);
-                if (receipt) {
-                    document.getElementById('receiptId').value = receipt.id;
-                    document.getElementById('receiptFormClient').value = receipt.clientId;
-                    document.getElementById('receiptFormEvent').value = receipt.eventId;
-                    document.getElementById('receiptFormDate').value = receipt.receiptDate;
-                    document.getElementById('receiptFormValue').value = receipt.value;
-                    document.getElementById('receiptFormDescription').value = receipt.description || '';
-                    document.getElementById('receiptFormPaymentMethod').value = receipt.paymentMethod;
-                    
-                    // Show PDF button
-                    document.getElementById('receiptPdfBtn').style.display = 'inline-block';
-                }
-            } else {
-                // New receipt
-                receiptModalTitle.textContent = 'Novo Recibo';
-                document.getElementById('receiptForm').reset();
-                document.getElementById('receiptId').value = '';
-                
-                // Hide PDF button for new receipts
-                document.getElementById('receiptPdfBtn').style.display = 'none';
-            }
-            
-            // Populate clients and events dropdowns
-            const clientSelect = document.getElementById('receiptFormClient');
-            clientSelect.innerHTML = '<option value="">Selecione um cliente...</option>';
-            appData.clients.forEach(client => {
-                const option = document.createElement('option');
-                option.value = client.id;
-                option.textContent = client.name;
-                clientSelect.appendChild(option);
-            });
-            
-            const eventSelect = document.getElementById('receiptFormEvent');
-            eventSelect.innerHTML = '<option value="">Nenhum evento específico</option>';
-            appData.events.forEach(event => {
-                const option = document.createElement('option');
-                option.value = event.id;
-                option.textContent = `${event.type} - ${event.clientName}`;
-                eventSelect.appendChild(option);
-            });
-            
-            receiptModal.show();
-        }
-
-        // Save receipt
-        function saveReceipt() {
-            const receiptId = document.getElementById('receiptId').value;
-            const clientId = document.getElementById('receiptFormClient').value;
-            const eventId = document.getElementById('receiptFormEvent').value;
-            const receiptDate = document.getElementById('receiptFormDate').value;
-            const receiptValue = document.getElementById('receiptFormValue').value;
-            const receiptDescription = document.getElementById('receiptFormDescription').value;
-            const receiptPaymentMethod = document.getElementById('receiptFormPaymentMethod').value;
-            
-            const receiptData = {
-                clientId: clientId,
-                eventId: eventId,
-                receiptDate: receiptDate,
-                value: receiptValue ? parseFloat(receiptValue) : null,
-                description: receiptDescription,
-                paymentMethod: receiptPaymentMethod,
-                updatedAt: new Date().toISOString()
-            };
-            
-            if (receiptId) {
-                // Update existing receipt
-                const index = appData.receipts.findIndex(r => r.id === receiptId);
-                if (index !== -1) {
-                    appData.receipts[index] = { ...appData.receipts[index], ...receiptData };
-                }
-            } else {
-                // Create new receipt
-                receiptData.id = Date.now().toString();
-                receiptData.createdAt = new Date().toISOString();
-                receiptData.number = `REC-${new Date().getFullYear()}-${appData.receipts.length + 1}`;
-                appData.receipts.push(receiptData);
-            }
-            
-            saveData();
-            receiptModal.hide();
-            loadReceiptsList();
-            alert('Recibo salvo com sucesso!');
-        }
-
-        // Load receipts list
-        function loadReceiptsList() {
-            const receiptsList = document.getElementById('receiptsList');
-            
-            if (appData.receipts.length === 0) {
-                receiptsList.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-receipt"></i>
-                        <h5>Nenhum recibo cadastrado</h5>
-                        <p>Comece criando seu primeiro recibo.</p>
-                        <button class="btn btn-primary" onclick="showReceiptModal()">Criar Recibo</button>
-                    </div>
-                `;
-                return;
-            }
-            
-            let html = `
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Número</th>
-                                <th>Cliente</th>
-                                <th>Data</th>
-                                <th>Valor</th>
-                                <th>Forma de Pagamento</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-            
-            appData.receipts.forEach(receipt => {
-                const client = appData.clients.find(c => c.id === receipt.clientId);
-                const receiptDate = new Date(receipt.receiptDate);
-                const formattedDate = receiptDate.toLocaleDateString('pt-BR');
-                
-                html += `
-                    <tr>
-                        <td>${receipt.number || 'N/A'}</td>
-                        <td>${client ? client.name : 'N/A'}</td>
-                        <td>${formattedDate}</td>
-                        <td>R$ ${receipt.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                        <td>${receipt.paymentMethod || 'N/A'}</td>
-                        <td class="action-buttons">
-                            <button class="btn btn-sm btn-outline-primary" onclick="showReceiptModal('${receipt.id}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteReceipt('${receipt.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                            <button class="btn btn-sm btn-pdf" onclick="generateReceiptPDF('${receipt.id}')">
-                                <i class="fas fa-file-pdf"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            
-            receiptsList.innerHTML = html;
-        }
-
-        // Load settings
-        function loadSettings() {
-            document.getElementById('companyName').value = appData.settings.companyName;
-            document.getElementById('userName').value = appData.settings.userName;
-            document.getElementById('email').value = appData.settings.email;
-            document.getElementById('phone').value = appData.settings.phone;
-            document.getElementById('address').value = appData.settings.address;
-        }
-
-        // Save settings
-        function saveSettings() {
-            appData.settings.companyName = document.getElementById('companyName').value;
-            appData.settings.userName = document.getElementById('userName').value;
-            appData.settings.email = document.getElementById('email').value;
-            appData.settings.phone = document.getElementById('phone').value;
-            appData.settings.address = document.getElementById('address').value;
-            
-            saveData();
-            alert('Configurações salvas com sucesso!');
-        }
-
-        // Load reports
-        function loadReports() {
-            // This would typically generate charts and reports based on the data
-            // For now, we'll just show a placeholder
-            const financialChart = document.getElementById('financialChart');
-            const eventsChart = document.getElementById('eventsChart');
-            
-            // In a real implementation, you would use Chart.js to create actual charts
-            financialChart.innerHTML = '<div class="text-center p-4"><i class="fas fa-chart-line fa-3x mb-3 text-primary"></i><p>Gráfico Financeiro</p></div>';
-            eventsChart.innerHTML = '<div class="text-center p-4"><i class="fas fa-chart-pie fa-3x mb-3 text-primary"></i><p>Gráfico de Eventos por Tipo</p></div>';
-        }
-
-        // Generate report
-        function generateReport() {
-            alert('Relatório gerado com sucesso! Em uma implementação real, isso criaria um arquivo PDF ou Excel.');
-        }
-
-        // Get status badge class
-        function getStatusBadgeClass(status) {
-            const classes = {
-                'planejamento': 'bg-secondary',
-                'confirmado': 'bg-success',
-                'realizado': 'bg-primary',
-                'cancelado': 'bg-danger'
-            };
-            return classes[status] || 'bg-secondary';
-        }
-
-        // Get status text
-        function getStatusText(status) {
-            const texts = {
-                'planejamento': 'Em Planejamento',
-                'confirmado': 'Confirmado',
-                'realizado': 'Realizado',
-                'cancelado': 'Cancelado'
-            };
-            return texts[status] || status;
-        }
-
-        // Get budget status badge class
-        function getBudgetStatusBadgeClass(status) {
-            const classes = {
-                'rascunho': 'bg-secondary',
-                'enviado': 'bg-warning',
-                'aprovado': 'bg-success',
-                'recusado': 'bg-danger'
-            };
-            return classes[status] || 'bg-secondary';
-        }
-
-        // Get budget status text
-        function getBudgetStatusText(status) {
-            const texts = {
-                'rascunho': 'Rascunho',
-                'enviado': 'Enviado',
-                'aprovado': 'Aprovado',
-                'recusado': 'Recusado'
-            };
-            return texts[status] || status;
-        }
-
-        // Get contract status badge class
-        function getContractStatusBadgeClass(status) {
-            const classes = {
-                'rascunho': 'bg-secondary',
-                'assinado': 'bg-success',
-                'cancelado': 'bg-danger'
-            };
-            return classes[status] || 'bg-secondary';
-        }
-
-        // Get contract status text
-        function getContractStatusText(status) {
-            const texts = {
-                'rascunho': 'Rascunho',
-                'assinado': 'Assinado',
-                'cancelado': 'Cancelado'
-            };
-            return texts[status] || status;
-        }
-
-        // Delete functions
-        function deleteEvent(eventId) {
-            if (confirm('Tem certeza que deseja excluir este evento?')) {
-                appData.events = appData.events.filter(e => e.id !== eventId);
-                saveData();
-                loadEventsList();
-            }
-        }
-
-        function deleteClient(clientId) {
-            if (confirm('Tem certeza que deseja excluir este cliente?')) {
-                appData.clients = appData.clients.filter(c => c.id !== clientId);
-                saveData();
-                loadClientsList();
-            }
-        }
-
-        function deleteSupplier(supplierId) {
-            if (confirm('Tem certeza que deseja excluir este fornecedor?')) {
-                appData.suppliers = appData.suppliers.filter(s => s.id !== supplierId);
-                saveData();
-                loadSuppliersList();
-            }
-        }
-
-        function deleteBudget(budgetId) {
-            if (confirm('Tem certeza que deseja excluir este orçamento?')) {
-                appData.budgets = appData.budgets.filter(b => b.id !== budgetId);
-                saveData();
-                loadBudgetsList();
-            }
-        }
-
-        function deleteContract(contractId) {
-            if (confirm('Tem certeza que deseja excluir este contrato?')) {
-                appData.contracts = appData.contracts.filter(c => c.id !== contractId);
-                saveData();
-                loadContractsList();
-            }
-        }
-
-        function deleteReceipt(receiptId) {
-            if (confirm('Tem certeza que deseja excluir este recibo?')) {
-                appData.receipts = appData.receipts.filter(r => r.id !== receiptId);
-                saveData();
-                loadReceiptsList();
-            }
-        }
-
-        // Export data
-        function exportData() {
-            const dataStr = JSON.stringify(appData, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            
-            const exportFileDefaultName = `cerimonialpro-backup-${new Date().toISOString().split('T')[0]}.json`;
-            
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            linkElement.click();
-        }
-
-        // Import data
-        function importData() {
-            const fileInput = document.getElementById('backupFile');
-            const file = fileInput.files[0];
-            
-            if (!file) {
-                alert('Por favor, selecione um arquivo de backup.');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const importedData = JSON.parse(e.target.result);
-                    
-                    if (confirm('Isso substituirá todos os dados atuais. Tem certeza?')) {
-                        appData = importedData;
-                        saveData();
-                        alert('Dados importados com sucesso!');
-                        fileInput.value = '';
-                        updateDashboard();
-                    }
-                } catch (error) {
-                    alert('Erro ao importar dados. O arquivo pode estar corrompido.');
-                    console.error(error);
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        // Clear all data
-        function clearAllData() {
-            if (confirm('ATENÇÃO: Isso irá apagar TODOS os dados do sistema. Tem certeza absoluta?')) {
-                if (confirm('Esta ação não pode ser desfeita. Continuar?')) {
-                    localStorage.removeItem('cerimonialProData');
-                    appData = {
-                        events: [],
-                        clients: [],
-                        suppliers: [],
-                        budgets: [],
-                        contracts: [],
-                        receipts: [],
-                        tasks: [],
-                        settings: {
-                            companyName: "CerimonialPro",
-                            userName: "Cerimonialista",
-                            email: "contato@cerimonialpro.com",
-                            phone: "(11) 99999-9999",
-                            address: ""
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        "Authorization": `token ${token}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        description: "Backup CerimonialPro",
+                        public: false,
+                        files: {
+                            [fileName]: { content: content }
                         }
-                    };
-                    saveData();
-                    alert('Todos os dados foram removidos.');
-                    updateDashboard();
-                    if (document.getElementById('events').style.display !== 'none') {
-                        loadEventsList();
-                    }
-                }
-            }
-        }
-
-        // PDF Generation Functions
-        function generateBudgetPDF(budgetId = null) {
-            let budget;
-            
-            if (budgetId) {
-                budget = appData.budgets.find(b => b.id === budgetId);
-            } else {
-                const budgetIdInput = document.getElementById('budgetId').value;
-                if (budgetIdInput) {
-                    budget = appData.budgets.find(b => b.id === budgetIdInput);
-                }
-            }
-            
-            if (!budget) {
-                alert('Orçamento não encontrado!');
-                return;
-            }
-            
-            const client = appData.clients.find(c => c.id === budget.clientId);
-            const event = appData.events.find(e => e.id === budget.eventId);
-            
-            // Update PDF template with company settings
-            const companyName = appData.settings.companyName || "CerimonialPro";
-            const companyEmail = appData.settings.email || "contato@cerimonialpro.com";
-            const companyPhone = appData.settings.phone || "(11) 99999-9999";
-            
-            document.getElementById('budget-pdf-company-name').textContent = companyName;
-            document.getElementById('budget-pdf-footer-company').textContent = `${companyName} - Sistema de Gestão de Eventos`;
-            document.getElementById('budget-pdf-footer-contact').textContent = `${companyEmail} | ${companyPhone}`;
-            
-            document.getElementById('budget-pdf-date').textContent = new Date().toLocaleDateString('pt-BR');
-            document.getElementById('budget-pdf-title').textContent = `ORÇAMENTO ${budget.number || ''}`;
-            
-            // Client info
-            document.getElementById('budget-pdf-client-info').innerHTML = `
-                <p><strong>Nome:</strong> ${client ? client.name : 'N/A'}</p>
-                ${client && client.email ? `<p><strong>E-mail:</strong> ${client.email}</p>` : ''}
-                ${client && client.phone ? `<p><strong>Telefone:</strong> ${client.phone}</p>` : ''}
-            `;
-            
-            // Event info
-            document.getElementById('budget-pdf-event-info').innerHTML = `
-                ${event ? `<p><strong>Tipo de Evento:</strong> ${event.type === 'casamento' ? 'Casamento' : 
-                          event.type === 'aniversario' ? 'Aniversário' : 
-                          event.type === 'formatura' ? 'Formatura' : 
-                          event.type === 'corporativo' ? 'Evento Corporativo' : 'Outro'}</p>` : ''}
-                ${event && event.date ? `<p><strong>Data do Evento:</strong> ${new Date(event.date).toLocaleDateString('pt-BR')}</p>` : ''}
-                ${event && event.location ? `<p><strong>Local:</strong> ${event.location}</p>` : ''}
-                ${budget.validUntil ? `<p><strong>Validade do Orçamento:</strong> ${new Date(budget.validUntil).toLocaleDateString('pt-BR')}</p>` : ''}
-            `;
-            
-            // Budget items
-            const itemsBody = document.getElementById('budget-pdf-items-body');
-            itemsBody.innerHTML = '';
-            
-            if (budget.items && budget.items.length > 0) {
-                budget.items.forEach(item => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${item.description}</td>
-                        <td>${item.quantity}</td>
-                        <td>R$ ${item.unitPrice.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                        <td>R$ ${item.total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                    `;
-                    itemsBody.appendChild(row);
+                    })
                 });
+
+                if (!response.ok) throw new Error("Erro na comunicação com GitHub");
+
+                const result = await response.json();
+                if (!gistId) {
+                    appData.settings.gistId = result.id;
+                    document.getElementById('gistId').value = result.id;
+                    saveData();
+                }
+
+                statusEl.className = "sync-status online";
+                statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Sincronizado';
+                alert("Sincronização concluída com sucesso!");
+            } catch (error) {
+                console.error(error);
+                statusEl.className = "sync-status offline";
+                statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Erro ao Sincronizar';
+                alert("Erro ao sincronizar: " + error.message);
             }
-            
-            // Total
-            document.getElementById('budget-pdf-total').textContent = `R$ ${budget.total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            
-            // Observations
-            if (budget.observations) {
-                document.getElementById('budget-pdf-observations').textContent = budget.observations;
-                document.getElementById('budget-pdf-observations-section').style.display = 'block';
-            } else {
-                document.getElementById('budget-pdf-observations-section').style.display = 'none';
-            }
-            
-            // Generate PDF
-            generatePDF('budget-pdf-template', `Orçamento-${budget.number || budget.id}.pdf`);
         }
 
-        function generateContractPDF(contractId = null) {
-            let contract;
-            
-            if (contractId) {
-                contract = appData.contracts.find(c => c.id === contractId);
-            } else {
-                const contractIdInput = document.getElementById('contractId').value;
-                if (contractIdInput) {
-                    contract = appData.contracts.find(c => c.id === contractIdInput);
-                }
+        function checkGistSync() {
+            const statusEl = document.getElementById('syncStatus');
+            if (appData.settings.gistToken && appData.settings.gistId) {
+                statusEl.className = "sync-status online";
+                statusEl.innerHTML = '<i class="fas fa-cloud"></i> Conectado ao Gist';
             }
-            
-            if (!contract) {
-                alert('Contrato não encontrado!');
-                return;
-            }
-            
-            const client = appData.clients.find(c => c.id === contract.clientId);
-            const event = appData.events.find(e => e.id === contract.eventId);
-            
-            // Update PDF template with company settings
-            const companyName = appData.settings.companyName || "CerimonialPro";
-            const companyEmail = appData.settings.email || "contato@cerimonialpro.com";
-            const companyPhone = appData.settings.phone || "(11) 99999-9999";
-            const companyAddress = appData.settings.address || "Av. Paulista, 1000 - São Paulo/SP";
-            
-            document.getElementById('contract-pdf-company-name').textContent = companyName;
-            document.getElementById('contract-pdf-signature-company').textContent = companyName;
-            document.getElementById('contract-pdf-footer-company').textContent = `${companyName} - Sistema de Gestão de Eventos`;
-            document.getElementById('contract-pdf-footer-contact').textContent = `${companyEmail} | ${companyPhone}`;
-            
-            document.getElementById('contract-pdf-date').textContent = new Date().toLocaleDateString('pt-BR');
-            document.getElementById('contract-pdf-title').textContent = `CONTRATO ${contract.number || ''}`;
-            
-            // Parties
-            document.getElementById('contract-pdf-parties').innerHTML = `
-                <p><strong>CONTRATANTE:</strong> ${client ? client.name : 'N/A'}</p>
-                ${client && client.cpfCnpj ? `<p><strong>CPF/CNPJ:</strong> ${client.cpfCnpj}</p>` : ''}
-                ${client && client.address ? `<p><strong>ENDEREÇO:</strong> ${client.address}</p>` : ''}
-                <p><strong>CONTRATADA:</strong> ${companyName}</p>
-                <p><strong>CNPJ:</strong> 12.345.678/0001-90</p>
-                <p><strong>ENDEREÇO:</strong> ${companyAddress}</p>
-            `;
-            
-            // Object
-            document.getElementById('contract-pdf-object').innerHTML = `
-                <p>A CONTRATADA se obriga a prestar serviços de cerimonial para o evento:</p>
-                <p><strong>${event ? `${event.type === 'casamento' ? 'Casamento' : 
-                          event.type === 'aniversario' ? 'Aniversário' : 
-                          event.type === 'formatura' ? 'Formatura' : 
-                          event.type === 'corporativo' ? 'Evento Corporativo' : 'Evento'}` : 'Evento'}</strong></p>
-                ${event && event.date ? `<p><strong>Data:</strong> ${new Date(event.date).toLocaleDateString('pt-BR')}</p>` : ''}
-                ${event && event.location ? `<p><strong>Local:</strong> ${event.location}</p>` : ''}
-                ${event && event.description ? `<p><strong>Descrição:</strong> ${event.description}</p>` : ''}
-            `;
-            
-            // Payment
-            document.getElementById('contract-pdf-payment').innerHTML = `
-                <p><strong>Valor do Contrato:</strong> R$ ${contract.value ? contract.value.toLocaleString('pt-BR', {minimumFractionDigits: 2}) : '0,00'}</p>
-                <p><strong>Forma de Pagamento:</strong> A combinar entre as partes</p>
-            `;
-            
-            // Terms
-            document.getElementById('contract-pdf-terms').innerHTML = contract.terms || `
-                <p>1. O presente contrato tem por objetivo a prestação de serviços de cerimonial para o evento mencionado.</p>
-                <p>2. O CONTRATANTE se obriga a pagar o valor acordado conforme condições estabelecidas.</p>
-                <p>3. A CONTRATADA se obriga a prestar os serviços com qualidade e profissionalismo.</p>
-                <p>4. Quaisquer alterações deverão ser acordadas por escrito entre as partes.</p>
-                <p>5. Este contrato é regido pelas leis brasileiras.</p>
-            `;
-            
-            // Generate PDF
-            generatePDF('contract-pdf-template', `Contrato-${contract.number || contract.id}.pdf`);
         }
 
-        function generateReceiptPDF(receiptId = null) {
-            let receipt;
-            
-            if (receiptId) {
-                receipt = appData.receipts.find(r => r.id === receiptId);
-            } else {
-                const receiptIdInput = document.getElementById('receiptId').value;
-                if (receiptIdInput) {
-                    receipt = appData.receipts.find(r => r.id === receiptIdInput);
-                }
-            }
-            
-            if (!receipt) {
-                alert('Recibo não encontrado!');
-                return;
-            }
-            
-            const client = appData.clients.find(c => c.id === receipt.clientId);
-            const event = appData.events.find(e => e.id === receipt.eventId);
-            
-            // Update PDF template with company settings
-            const companyName = appData.settings.companyName || "CerimonialPro";
-            const companyEmail = appData.settings.email || "contato@cerimonialpro.com";
-            const companyPhone = appData.settings.phone || "(11) 99999-9999";
-            
-            document.getElementById('receipt-pdf-company-name').textContent = companyName;
-            document.getElementById('receipt-pdf-signature-company').textContent = companyName;
-            document.getElementById('receipt-pdf-footer-company').textContent = `${companyName} - Sistema de Gestão de Eventos`;
-            document.getElementById('receipt-pdf-footer-contact').textContent = `${companyEmail} | ${companyPhone}`;
-            
-            document.getElementById('receipt-pdf-date').textContent = new Date().toLocaleDateString('pt-BR');
-            document.getElementById('receipt-pdf-title').textContent = `RECIBO ${receipt.number || ''}`;
-            
-            // Payment info
-            document.getElementById('receipt-pdf-payment-info').innerHTML = `
-                <p><strong>Recebemos de:</strong> ${client ? client.name : 'N/A'}</p>
-                <p><strong>CPF/CNPJ:</strong> ${client && client.cpfCnpj ? client.cpfCnpj : 'N/A'}</p>
-                <p><strong>Valor:</strong> R$ ${receipt.value.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-                <p><strong>Forma de Pagamento:</strong> ${receipt.paymentMethod || 'N/A'}</p>
-                ${event ? `<p><strong>Referente ao evento:</strong> ${event.type === 'casamento' ? 'Casamento' : 
-                          event.type === 'aniversario' ? 'Aniversário' : 
-                          event.type === 'formatura' ? 'Formatura' : 
-                          event.type === 'corporativo' ? 'Evento Corporativo' : 'Evento'}</p>` : ''}
-            `;
-            
-            // Description
-            document.getElementById('receipt-pdf-description').innerHTML = `
-                <p>${receipt.description || 'Pagamento referente a serviços de cerimonial prestados.'}</p>
-                <p><strong>Data do Recibo:</strong> ${new Date(receipt.receiptDate).toLocaleDateString('pt-BR')}</p>
-            `;
-            
-            // Generate PDF
-            generatePDF('receipt-pdf-template', `Recibo-${receipt.number || receipt.id}.pdf`);
+        // CRUD Operations
+        function addEvent() {
+            const ev = {
+                id: Date.now().toString(),
+                type: document.getElementById('evType').value,
+                clientName: document.getElementById('evClient').value,
+                date: document.getElementById('evDate').value,
+                status: 'planejamento'
+            };
+            appData.events.push(ev);
+            saveData();
+            bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
+            updateDashboard();
         }
 
-        function generatePDF(templateId, filename) {
-            const { jsPDF } = window.jspdf;
+        function updateDashboard() {
+            document.getElementById('totalEvents').textContent = appData.events.length;
+            document.getElementById('totalClients').textContent = appData.clients.length;
             
-            if (!jsPDF) {
-                alert('Erro: Biblioteca jsPDF não carregada corretamente.');
-                return;
-            }
+            const total = appData.receipts.reduce((sum, r) => sum + (r.value || 0), 0);
+            document.getElementById('totalRevenue').textContent = `R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
             
-            const doc = new jsPDF('p', 'mm', 'a4');
-            
-            // Get the template element
-            const template = document.getElementById(templateId);
-            
-            if (!template) {
-                alert('Erro: Template PDF não encontrado.');
-                return;
-            }
-            
-            // Use html2canvas to capture the template as an image
-            html2canvas(template, {
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                backgroundColor: '#ffffff'
-            }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const imgWidth = doc.internal.pageSize.getWidth();
-                const pageHeight = doc.internal.pageSize.getHeight();
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                
-                let heightLeft = imgHeight;
-                let position = 0;
-                
-                // Add first page
-                doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
-                
-                // Add additional pages if needed
-                while (heightLeft >= 0) {
-                    position = heightLeft - imgHeight;
-                    doc.addPage();
-                    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                    heightLeft -= pageHeight;
-                }
-                
-                doc.save(filename);
-            }).catch(error => {
-                console.error('Error generating PDF:', error);
-                alert('Erro ao gerar PDF. Tente novamente.');
+            const list = document.getElementById('upcomingEventsList');
+            list.innerHTML = '';
+            appData.events.sort((a,b) => new Date(a.date) - new Date(b.date)).slice(0,5).forEach(ev => {
+                list.innerHTML += `<tr><td>${new Date(ev.date).toLocaleDateString('pt-BR')}</td><td>${ev.type}</td><td>${ev.clientName}</td><td><span class="badge bg-info">${ev.status}</span></td></tr>`;
             });
+
+            const fullList = document.getElementById('fullEventsList');
+            fullList.innerHTML = '';
+            appData.events.forEach(ev => {
+                fullList.innerHTML += `<tr><td>${ev.date}</td><td>${ev.type}</td><td>${ev.clientName}</td><td><button class="btn btn-sm btn-danger" onclick="deleteEvent('${ev.id}')">Excluir</button></td></tr>`;
+            });
+        }
+
+        function deleteEvent(id) {
+            appData.events = appData.events.filter(e => e.id !== id);
+            saveData();
+            updateDashboard();
+        }
+
+        function showEventModal() {
+            new bootstrap.Modal(document.getElementById('eventModal')).show();
         }
     </script>
 </body>
