@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -10,6 +9,38 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+      import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+      import { getFirestore, doc, setDoc, getDoc, onSnapshot }
+        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+      // ─────────────────────────────────────────────────────────────
+      // CONFIGURAÇÃO FIREBASE
+      // Substitua pelos valores do seu projeto em https://console.firebase.google.com
+      // ─────────────────────────────────────────────────────────────
+      const firebaseConfig = {
+        apiKey:            "COLE_SUA_API_KEY",
+        authDomain:        "SEU_PROJETO.firebaseapp.com",
+        projectId:         "SEU_PROJETO",
+        storageBucket:     "SEU_PROJETO.appspot.com",
+        messagingSenderId: "SEU_SENDER_ID",
+        appId:             "SEU_APP_ID"
+      };
+
+      const firebaseApp = initializeApp(firebaseConfig);
+      const auth        = getAuth(firebaseApp);
+      const db          = getFirestore(firebaseApp);
+      const provider    = new GoogleAuthProvider();
+
+      // Expõe para o código global
+      window._firebase = { auth, db, provider, signInWithPopup, signOut,
+                           onAuthStateChanged, doc, setDoc, getDoc, onSnapshot };
+    </script>
+
     <style>
         :root {
             --primary-color: #8B4513;
@@ -18,556 +49,798 @@
             --light-color: #FFF8DC;
             --dark-color: #654321;
         }
-        
-        body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        /* ── Login Screen ── */
+        #loginScreen {
+            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-color), var(--dark-color));
         }
-        
-        /* Sidebar Responsive */
+        .login-card {
+            background: white; border-radius: 16px; padding: 48px 40px;
+            text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 420px; width: 90%;
+        }
+        .login-card .logo { font-size: 3rem; color: var(--primary-color); margin-bottom: 8px; }
+        .login-card h2 { color: var(--dark-color); font-weight: 700; margin-bottom: 4px; }
+        .login-card p { color: #888; margin-bottom: 32px; }
+        .btn-google {
+            background: white; color: #3c4043; border: 2px solid #dadce0;
+            padding: 12px 24px; border-radius: 8px; font-size: 1rem;
+            font-weight: 500; width: 100%; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            transition: box-shadow .2s;
+        }
+        .btn-google:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+        .btn-google img { width: 22px; height: 22px; }
+        .firebase-note {
+            margin-top: 28px; padding: 14px; background: #fff3cd;
+            border-radius: 8px; font-size: .82rem; color: #856404; text-align: left;
+        }
+        .firebase-note a { color: var(--primary-color); font-weight: 600; }
+
+        /* ── Sidebar ── */
         .sidebar {
             background: linear-gradient(to bottom, var(--primary-color), var(--dark-color));
-            color: white;
-            height: 100vh;
-            position: fixed;
-            padding-top: 20px;
-            overflow-y: auto;
-            z-index: 1000;
-            transition: all 0.3s;
-            width: 250px;
+            color: white; height: 100vh; position: fixed; padding-top: 20px;
+            overflow-y: auto; z-index: 1000; transition: all 0.3s; width: 250px;
         }
-        
         .sidebar .nav-link {
-            color: white;
-            padding: 12px 20px;
-            margin: 5px 0;
-            border-radius: 5px;
-            transition: all 0.3s;
+            color: white; padding: 12px 20px; margin: 5px 0;
+            border-radius: 5px; transition: all 0.3s;
         }
-        
         .sidebar .nav-link:hover, .sidebar .nav-link.active {
-            background-color: var(--accent-color);
-            color: var(--dark-color);
+            background-color: var(--accent-color); color: var(--dark-color);
         }
-        
-        .sidebar .nav-link i {
-            margin-right: 10px;
-            width: 20px;
-            text-align: center;
-        }
-        
-        .main-content {
-            margin-left: 250px;
-            padding: 20px;
-            transition: all 0.3s;
-        }
-        
-        /* Mobile Navbar */
+        .sidebar .nav-link i { margin-right: 10px; width: 20px; text-align: center; }
+
+        .main-content { margin-left: 250px; padding: 20px; transition: all 0.3s; }
+
+        /* Mobile */
         .mobile-header {
-            display: none;
-            background-color: var(--primary-color);
-            color: white;
-            padding: 10px 15px;
-            position: sticky;
-            top: 0;
-            z-index: 1001;
-            justify-content: space-between;
-            align-items: center;
+            display: none; background-color: var(--primary-color); color: white;
+            padding: 10px 15px; position: sticky; top: 0; z-index: 1001;
+            justify-content: space-between; align-items: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-
         @media (max-width: 991.98px) {
-            .sidebar {
-                left: -250px;
-            }
-            .sidebar.active {
-                left: 0;
-            }
-            .main-content {
-                margin-left: 0;
-                padding: 15px;
-            }
-            .mobile-header {
-                display: flex;
-            }
+            .sidebar { left: -250px; }
+            .sidebar.active { left: 0; }
+            .main-content { margin-left: 0; padding: 15px; }
+            .mobile-header { display: flex; }
             .sidebar-overlay {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0,0,0,0.5);
-                z-index: 999;
+                display: none; position: fixed; inset: 0;
+                background: rgba(0,0,0,0.5); z-index: 999;
             }
-            .sidebar-overlay.active {
-                display: block;
-            }
-            .header {
-                flex-direction: column;
-                align-items: flex-start !important;
-                gap: 10px;
-            }
-            .header h4 {
-                margin-bottom: 0;
-            }
+            .sidebar-overlay.active { display: block; }
+            .header { flex-direction: column; align-items: flex-start !important; gap: 10px; }
         }
 
         .header {
-            background-color: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .card {
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            border: none;
-        }
-        
-        .card-header {
-            background-color: var(--primary-color);
-            color: white;
-            border-radius: 10px 10px 0 0 !important;
-            padding: 15px 20px;
-            font-weight: 600;
-        }
-        
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        
-        .btn-primary:hover {
-            background-color: var(--secondary-color);
-            border-color: var(--secondary-color);
-        }
-        
-        .stat-card {
-            text-align: center;
-            padding: 20px;
-            border-radius: 10px;
-            color: white;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card.primary { background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); }
-        .stat-card.secondary { background: linear-gradient(45deg, var(--secondary-color), var(--accent-color)); }
-        .stat-card.accent { background: linear-gradient(45deg, var(--accent-color), #FFD700); }
-        
-        .stat-card i { font-size: 2.5rem; margin-bottom: 10px; }
-        .stat-card .number { font-size: 2rem; font-weight: bold; }
-        
-        .table-responsive {
-            border-radius: 10px;
+            background: white; padding: 15px 20px; border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: center;
         }
 
-        /* Gist Sync Status */
-        .sync-status {
-            font-size: 0.8rem;
-            margin-left: 10px;
-            padding: 4px 8px;
-            border-radius: 20px;
-            background: #f1f1f1;
+        .card { border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; border: none; }
+        .card-header {
+            background-color: var(--primary-color); color: white;
+            border-radius: 10px 10px 0 0 !important; padding: 15px 20px; font-weight: 600;
         }
-        .sync-status.online { color: #28a745; background: #e8f5e9; }
+
+        .btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); }
+        .btn-primary:hover { background-color: var(--secondary-color); border-color: var(--secondary-color); }
+
+        .stat-card { text-align: center; padding: 20px; border-radius: 10px; color: white; margin-bottom: 20px; }
+        .stat-card.primary  { background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); }
+        .stat-card.secondary{ background: linear-gradient(45deg, var(--secondary-color), var(--accent-color)); }
+        .stat-card.accent   { background: linear-gradient(45deg, var(--accent-color), #FFD700); }
+        .stat-card i { font-size: 2.5rem; margin-bottom: 10px; }
+        .stat-card .number { font-size: 2rem; font-weight: bold; }
+
+        /* ── Sync / User ── */
+        .sync-status {
+            font-size: .8rem; margin-left: 10px; padding: 4px 10px;
+            border-radius: 20px; background: #f1f1f1;
+        }
+        .sync-status.online  { color: #28a745; background: #e8f5e9; }
         .sync-status.offline { color: #dc3545; background: #ffebee; }
         .sync-status.syncing { color: #007bff; background: #e3f2fd; }
 
-        /* PDF Template Styles */
-        .pdf-template {
-            position: fixed;
-            left: -10000px;
-            top: -10000px;
-            width: 210mm;
-            padding: 15mm;
-            background: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            font-size: 12px;
-            line-height: 1.3;
+        .user-info {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,.15); border-radius: 20px;
+            padding: 6px 12px; margin: 8px 12px;
         }
-        
-        .pdf-header {
-            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 15px;
-            border-radius: 10px 10px 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .pdf-logo { font-size: 20px; font-weight: bold; }
-        .pdf-title { text-align: center; margin: 15px 0; color: var(--primary-color); border-bottom: 2px solid var(--accent-color); padding-bottom: 8px; font-size: 18px; }
-        .pdf-section { margin-bottom: 15px; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; }
-        .pdf-section-title { color: var(--secondary-color); margin-bottom: 8px; font-weight: bold; font-size: 13px; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 11px; }
-        .pdf-table th { background-color: var(--light-color); padding: 8px; text-align: left; border: 1px solid #ddd; }
-        .pdf-table td { padding: 6px 8px; border: 1px solid #ddd; }
-        .pdf-footer { margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0; text-align: center; color: #666; font-size: 10px; }
-        .pdf-signature { margin-top: 25px; display: flex; justify-content: space-between; }
-        .pdf-signature-line { border-top: 1px solid #333; width: 180px; text-align: center; padding-top: 5px; font-size: 11px; }
+        .user-info img { width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; }
+        .user-info span { font-size: .82rem; color: white; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .btn-logout { background: none; border: 1px solid rgba(255,255,255,.4); color: white; border-radius: 6px; padding: 3px 8px; font-size: .75rem; cursor: pointer; }
+        .btn-logout:hover { background: rgba(255,255,255,.15); }
+
+        /* PDF */
+        .pdf-template { position:fixed; left:-10000px; top:-10000px; width:210mm; padding:15mm; background:white; font-size:12px; line-height:1.3; }
     </style>
 </head>
 <body>
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <div class="mobile-header">
-        <button class="btn btn-link text-white p-0" id="sidebarToggle">
-            <i class="fas fa-bars fa-lg"></i>
+<!-- ══════════════ LOGIN SCREEN ══════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="logo"><i class="fas fa-glass-cheers"></i></div>
+    <h2>CerimonialPro</h2>
+    <p>Sistema de Gestão de Eventos</p>
+
+    <button class="btn-google" id="btnGoogleLogin">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+      Entrar com Google
+    </button>
+
+    <div class="firebase-note">
+      <strong>⚙️ Primeira vez?</strong> Antes de usar, configure seu projeto Firebase:<br>
+      1. Acesse <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a><br>
+      2. Crie um projeto → Ative <strong>Authentication &gt; Google</strong><br>
+      3. Ative <strong>Firestore Database</strong><br>
+      4. Substitua as chaves no topo do arquivo HTML
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ APP (oculto até login) ══════════════ -->
+<div id="appShell" style="display:none;">
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="mobile-header">
+    <button class="btn btn-link text-white p-0" id="sidebarToggle"><i class="fas fa-bars fa-lg"></i></button>
+    <h5 class="m-0">CerimonialPro</h5>
+    <div id="mobileSyncIcon"><i class="fas fa-cloud" id="mobileCloudIcon"></i></div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="text-center mb-2 px-3">
+      <h4><i class="fas fa-glass-cheers"></i> <span id="companyNameDisplay">CerimonialPro</span></h4>
+    </div>
+
+    <!-- Usuário logado -->
+    <div class="user-info" id="userInfo">
+      <img id="userPhoto" src="" alt="">
+      <span id="userName">Usuário</span>
+      <button class="btn-logout ms-auto" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+
+    <ul class="nav flex-column mt-2">
+      <li class="nav-item"><a class="nav-link active" href="#" data-target="dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" data-target="events"><i class="fas fa-calendar-alt"></i> Eventos</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" data-target="clients"><i class="fas fa-users"></i> Clientes</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" data-target="suppliers"><i class="fas fa-handshake"></i> Fornecedores</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" data-target="budgets"><i class="fas fa-file-invoice-dollar"></i> Orçamentos</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" data-target="contracts"><i class="fas fa-file-contract"></i> Contratos</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" data-target="receipts"><i class="fas fa-receipt"></i> Recibos</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" data-target="reports"><i class="fas fa-chart-bar"></i> Relatórios</a></li>
+      <li class="nav-item"><a class="nav-link" href="#" data-target="settings"><i class="fas fa-cog"></i> Configurações</a></li>
+    </ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="header">
+      <h4 id="pageTitleDisplay">Dashboard</h4>
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <span id="syncStatus" class="sync-status syncing"><i class="fas fa-spinner fa-spin"></i> Conectando...</span>
+        <button class="btn btn-sm btn-outline-primary d-none d-md-inline-flex" onclick="manualSync()">
+          <i class="fas fa-sync"></i> Salvar agora
         </button>
-        <h5 class="m-0">CerimonialPro</h5>
-        <div id="mobileSyncIcon">
-            <i class="fas fa-sync-alt" onclick="syncWithGist()" style="cursor: pointer;"></i>
-        </div>
+      </div>
     </div>
 
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <div class="text-center mb-4">
-            <h3><i class="fas fa-glass-cheers"></i> <span id="companyNameDisplay">CerimonialPro</span></h3>
+    <!-- Dashboard -->
+    <div id="dashboard" class="content-section">
+      <div class="row">
+        <div class="col-md-4"><div class="stat-card primary"><i class="fas fa-calendar-check"></i><div class="number" id="totalEvents">0</div><div>Eventos Ativos</div></div></div>
+        <div class="col-md-4"><div class="stat-card secondary"><i class="fas fa-users"></i><div class="number" id="totalClients">0</div><div>Clientes Cadastrados</div></div></div>
+        <div class="col-md-4"><div class="stat-card accent"><i class="fas fa-dollar-sign"></i><div class="number" id="totalRevenue">R$ 0,00</div><div>Receita Total</div></div></div>
+      </div>
+      <div class="row mt-4">
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-header">Próximos Eventos</div>
+            <div class="card-body"><div class="table-responsive">
+              <table class="table table-hover"><thead><tr><th>Data</th><th>Evento</th><th>Cliente</th><th>Status</th></tr></thead>
+              <tbody id="upcomingEventsList"></tbody></table>
+            </div></div>
+          </div>
         </div>
-        <ul class="nav flex-column">
-            <li class="nav-item"><a class="nav-link active" href="#" data-target="dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
-            <li class="nav-item"><a class="nav-link" href="#" data-target="events"><i class="fas fa-calendar-alt"></i> Eventos</a></li>
-            <li class="nav-item"><a class="nav-link" href="#" data-target="clients"><i class="fas fa-users"></i> Clientes</a></li>
-            <li class="nav-item"><a class="nav-link" href="#" data-target="suppliers"><i class="fas fa-handshake"></i> Fornecedores</a></li>
-            <li class="nav-item"><a class="nav-link" href="#" data-target="budgets"><i class="fas fa-file-invoice-dollar"></i> Orçamentos</a></li>
-            <li class="nav-item"><a class="nav-link" href="#" data-target="contracts"><i class="fas fa-file-contract"></i> Contratos</a></li>
-            <li class="nav-item"><a class="nav-link" href="#" data-target="receipts"><i class="fas fa-receipt"></i> Recibos</a></li>
-            <li class="nav-item"><a class="nav-link" href="#" data-target="reports"><i class="fas fa-chart-bar"></i> Relatórios</a></li>
-            <li class="nav-item"><a class="nav-link" href="#" data-target="settings"><i class="fas fa-cog"></i> Configurações</a></li>
-        </ul>
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-header">Tarefas Pendentes</div>
+            <div class="card-body"><ul class="list-group list-group-flush" id="pendingTasksList"></ul></div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        <div class="header">
-            <h4 id="pageTitleDisplay">Dashboard</h4>
-            <div class="d-flex align-items-center">
-                <span id="syncStatus" class="sync-status offline"><i class="fas fa-cloud-upload-alt"></i> Não Sincronizado</span>
-                <button class="btn btn-sm btn-outline-primary ms-3 d-none d-md-block" onclick="syncWithGist()">
-                    <i class="fas fa-sync"></i> Sincronizar
-                </button>
-            </div>
-        </div>
-
-        <!-- Dashboard Section -->
-        <div id="dashboard" class="content-section">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="stat-card primary">
-                        <i class="fas fa-calendar-check"></i>
-                        <div class="number" id="totalEvents">0</div>
-                        <div>Eventos Ativos</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stat-card secondary">
-                        <i class="fas fa-users"></i>
-                        <div class="number" id="totalClients">0</div>
-                        <div>Clientes Cadastrados</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="stat-card accent">
-                        <i class="fas fa-dollar-sign"></i>
-                        <div class="number" id="totalRevenue">R$ 0,00</div>
-                        <div>Receita Total</div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="row mt-4">
-                <div class="col-md-8">
-                    <div class="card">
-                        <div class="card-header">Próximos Eventos</div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead><tr><th>Data</th><th>Evento</th><th>Cliente</th><th>Status</th></tr></thead>
-                                    <tbody id="upcomingEventsList"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-header">Tarefas Pendentes</div>
-                        <div class="card-body">
-                            <ul class="list-group list-group-flush" id="pendingTasksList"></ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Outras seções serão preenchidas dinamicamente pelo JS -->
-        <div id="events" class="content-section" style="display: none;">
-            <div class="d-flex justify-content-between mb-3">
-                <h5>Gerenciamento de Eventos</h5>
-                <button class="btn btn-primary btn-sm" onclick="showEventModal()">+ Novo Evento</button>
-            </div>
-            <div class="card"><div class="card-body"><div class="table-responsive"><table class="table"><thead><tr><th>Data</th><th>Tipo</th><th>Cliente</th><th>Ações</th></tr></thead><tbody id="fullEventsList"></tbody></table></div></div></div>
-        </div>
-
-        <div id="settings" class="content-section" style="display: none;">
-            <div class="card">
-                <div class="card-header">Sincronização com GitHub Gist</div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> A sincronização com Gist permite que você acesse seus dados de qualquer dispositivo. Crie um "Personal Access Token" no GitHub com escopo <strong>gist</strong>.
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">GitHub Token</label>
-                        <input type="password" class="form-control" id="gistToken" placeholder="ghp_xxxxxxxxxxxx">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Gist ID (Opcional)</label>
-                        <input type="text" class="form-control" id="gistId" placeholder="ID do Gist existente">
-                    </div>
-                    <button class="btn btn-primary" onclick="saveGistSettings()">Salvar e Sincronizar Agora</button>
-                </div>
-            </div>
-            
-            <div class="card mt-4">
-                <div class="card-header">Configurações Gerais</div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Nome da Empresa</label>
-                        <input type="text" class="form-control" id="companyNameInput">
-                    </div>
-                    <button class="btn btn-primary" onclick="saveCompanySettings()">Salvar Alterações</button>
-                </div>
-            </div>
-        </div>
+    <!-- Events -->
+    <div id="events" class="content-section" style="display:none;">
+      <div class="d-flex justify-content-between mb-3">
+        <h5>Gerenciamento de Eventos</h5>
+        <button class="btn btn-primary btn-sm" onclick="showEventModal()">+ Novo Evento</button>
+      </div>
+      <div class="card"><div class="card-body"><div class="table-responsive">
+        <table class="table"><thead><tr><th>Data</th><th>Tipo</th><th>Cliente</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="fullEventsList"></tbody></table>
+      </div></div></div>
     </div>
 
-    <!-- Modals -->
-    <div class="modal fade" id="eventModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Evento</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
-        <form id="eventForm">
-            <div class="mb-3"><label class="form-label">Tipo</label><input type="text" class="form-control" id="evType"></div>
-            <div class="mb-3"><label class="form-label">Cliente</label><input type="text" class="form-control" id="evClient"></div>
-            <div class="mb-3"><label class="form-label">Data</label><input type="date" class="form-control" id="evDate"></div>
-            <button type="button" class="btn btn-primary" onclick="addEvent()">Salvar</button>
-        </form>
-    </div></div></div></div>
+    <!-- Clients -->
+    <div id="clients" class="content-section" style="display:none;">
+      <div class="d-flex justify-content-between mb-3">
+        <h5>Clientes</h5>
+        <button class="btn btn-primary btn-sm" onclick="showClientModal()">+ Novo Cliente</button>
+      </div>
+      <div class="card"><div class="card-body"><div class="table-responsive">
+        <table class="table"><thead><tr><th>Nome</th><th>Telefone</th><th>Email</th><th>Ações</th></tr></thead>
+        <tbody id="clientsList"></tbody></table>
+      </div></div></div>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Data storage
-        let appData = {
-            events: [],
-            clients: [],
-            suppliers: [],
-            budgets: [],
-            contracts: [],
-            receipts: [],
-            tasks: [],
-            settings: {
-                companyName: "CerimonialPro",
-                gistToken: "",
-                gistId: ""
-            }
-        };
+    <!-- Suppliers -->
+    <div id="suppliers" class="content-section" style="display:none;">
+      <div class="d-flex justify-content-between mb-3">
+        <h5>Fornecedores</h5>
+        <button class="btn btn-primary btn-sm" onclick="showSupplierModal()">+ Novo Fornecedor</button>
+      </div>
+      <div class="card"><div class="card-body"><div class="table-responsive">
+        <table class="table"><thead><tr><th>Nome</th><th>Serviço</th><th>Telefone</th><th>Ações</th></tr></thead>
+        <tbody id="suppliersList"></tbody></table>
+      </div></div></div>
+    </div>
 
-        // UI Initialization
-        document.addEventListener('DOMContentLoaded', function() {
-            loadData();
-            setupMobileMenu();
-            setupNavigation();
-            updateDashboard();
-            checkGistSync();
-        });
+    <!-- Budgets -->
+    <div id="budgets" class="content-section" style="display:none;">
+      <div class="d-flex justify-content-between mb-3">
+        <h5>Orçamentos</h5>
+        <button class="btn btn-primary btn-sm" onclick="showBudgetModal()">+ Novo Orçamento</button>
+      </div>
+      <div class="card"><div class="card-body"><div class="table-responsive">
+        <table class="table"><thead><tr><th>Cliente</th><th>Evento</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="budgetsList"></tbody></table>
+      </div></div></div>
+    </div>
 
-        function setupMobileMenu() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            const toggle = document.getElementById('sidebarToggle');
+    <!-- Contracts -->
+    <div id="contracts" class="content-section" style="display:none;">
+      <div class="d-flex justify-content-between mb-3">
+        <h5>Contratos</h5>
+        <button class="btn btn-primary btn-sm" onclick="showContractModal()">+ Novo Contrato</button>
+      </div>
+      <div class="card"><div class="card-body"><div class="table-responsive">
+        <table class="table"><thead><tr><th>Cliente</th><th>Evento</th><th>Valor</th><th>Data Assinatura</th><th>Ações</th></tr></thead>
+        <tbody id="contractsList"></tbody></table>
+      </div></div></div>
+    </div>
 
-            toggle.addEventListener('click', () => {
-                sidebar.classList.toggle('active');
-                overlay.classList.toggle('active');
-            });
+    <!-- Receipts -->
+    <div id="receipts" class="content-section" style="display:none;">
+      <div class="d-flex justify-content-between mb-3">
+        <h5>Recibos</h5>
+        <button class="btn btn-primary btn-sm" onclick="showReceiptModal()">+ Novo Recibo</button>
+      </div>
+      <div class="card"><div class="card-body"><div class="table-responsive">
+        <table class="table"><thead><tr><th>Cliente</th><th>Descrição</th><th>Valor</th><th>Data</th><th>Ações</th></tr></thead>
+        <tbody id="receiptsList"></tbody></table>
+      </div></div></div>
+    </div>
 
-            overlay.addEventListener('click', () => {
-                sidebar.classList.remove('active');
-                overlay.classList.remove('active');
-            });
-        }
+    <!-- Reports -->
+    <div id="reports" class="content-section" style="display:none;">
+      <div class="row">
+        <div class="col-md-6"><div class="card"><div class="card-header">Eventos por Mês</div>
+          <div class="card-body"><canvas id="eventsChart"></canvas></div></div></div>
+        <div class="col-md-6"><div class="card"><div class="card-header">Receita por Mês</div>
+          <div class="card-body"><canvas id="revenueChart"></canvas></div></div></div>
+      </div>
+    </div>
 
-        function setupNavigation() {
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const target = link.getAttribute('data-target');
-                    
-                    document.querySelectorAll('.content-section').forEach(s => s.style.display = 'none');
-                    document.getElementById(target).style.display = 'block';
-                    
-                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                    link.classList.add('active');
-                    
-                    document.getElementById('pageTitleDisplay').textContent = link.textContent.trim();
-                    
-                    if (window.innerWidth < 992) {
-                        document.getElementById('sidebar').classList.remove('active');
-                        document.getElementById('sidebarOverlay').classList.remove('active');
-                    }
-                });
-            });
-        }
+    <!-- Settings -->
+    <div id="settings" class="content-section" style="display:none;">
+      <div class="card">
+        <div class="card-header"><i class="fas fa-fire text-warning"></i> Firebase — Sincronização em Nuvem</div>
+        <div class="card-body">
+          <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i> <strong>Dados sincronizados automaticamente!</strong>
+            Seus dados são salvos no Firebase Firestore e ficam disponíveis em qualquer dispositivo onde você fizer login com o mesmo e-mail Google.
+          </div>
+          <div id="firebaseUserCard" class="d-flex align-items-center gap-3 p-3 bg-light rounded">
+            <img id="settingsUserPhoto" src="" style="width:48px;height:48px;border-radius:50%;" alt="">
+            <div>
+              <strong id="settingsUserName">-</strong><br>
+              <small id="settingsUserEmail" class="text-muted">-</small>
+            </div>
+            <button class="btn btn-outline-danger btn-sm ms-auto" onclick="doLogout()">
+              <i class="fas fa-sign-out-alt"></i> Sair
+            </button>
+          </div>
+        </div>
+      </div>
 
-        // Data Management
-        function loadData() {
-            const saved = localStorage.getItem('cerimonialProData');
-            if (saved) appData = JSON.parse(saved);
-            
-            document.getElementById('companyNameDisplay').textContent = appData.settings.companyName;
-            document.getElementById('companyNameInput').value = appData.settings.companyName;
-            document.getElementById('gistToken').value = appData.settings.gistToken || "";
-            document.getElementById('gistId').value = appData.settings.gistId || "";
-        }
+      <div class="card mt-3">
+        <div class="card-header">Configurações Gerais</div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Nome da Empresa</label>
+            <input type="text" class="form-control" id="companyNameInput">
+          </div>
+          <button class="btn btn-primary" onclick="saveCompanySettings()">Salvar Alterações</button>
+        </div>
+      </div>
+    </div>
 
-        function saveData() {
-            localStorage.setItem('cerimonialProData', JSON.stringify(appData));
-            updateDashboard();
-        }
+  </div><!-- /main-content -->
+</div><!-- /appShell -->
 
-        function saveCompanySettings() {
-            appData.settings.companyName = document.getElementById('companyNameInput').value;
-            document.getElementById('companyNameDisplay').textContent = appData.settings.companyName;
-            saveData();
-            alert('Configurações salvas!');
-        }
+<!-- ── Modals ── -->
+<!-- Event Modal -->
+<div class="modal fade" id="eventModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5>Evento</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div class="mb-3"><label class="form-label">Tipo de Evento</label><input type="text" class="form-control" id="evType" placeholder="Casamento, Formatura..."></div>
+    <div class="mb-3"><label class="form-label">Cliente</label><input type="text" class="form-control" id="evClient"></div>
+    <div class="mb-3"><label class="form-label">Data</label><input type="date" class="form-control" id="evDate"></div>
+    <div class="mb-3"><label class="form-label">Status</label>
+      <select class="form-select" id="evStatus">
+        <option value="planejamento">Planejamento</option>
+        <option value="confirmado">Confirmado</option>
+        <option value="realizado">Realizado</option>
+        <option value="cancelado">Cancelado</option>
+      </select>
+    </div>
+    <button type="button" class="btn btn-primary w-100" onclick="addEvent()">Salvar</button>
+  </div>
+</div></div></div>
 
-        // Gist Sync Logic
-        function saveGistSettings() {
-            appData.settings.gistToken = document.getElementById('gistToken').value;
-            appData.settings.gistId = document.getElementById('gistId').value;
-            saveData();
-            syncWithGist();
-        }
+<!-- Client Modal -->
+<div class="modal fade" id="clientModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5>Cliente</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div class="mb-3"><label class="form-label">Nome</label><input type="text" class="form-control" id="clName"></div>
+    <div class="mb-3"><label class="form-label">Telefone</label><input type="tel" class="form-control" id="clPhone" placeholder="(82) 99999-9999"></div>
+    <div class="mb-3"><label class="form-label">Email</label><input type="email" class="form-control" id="clEmail"></div>
+    <button type="button" class="btn btn-primary w-100" onclick="addClient()">Salvar</button>
+  </div>
+</div></div></div>
 
-        async function syncWithGist() {
-            const token = appData.settings.gistToken;
-            if (!token) {
-                alert("Por favor, configure o GitHub Token nas configurações.");
-                return;
-            }
+<!-- Supplier Modal -->
+<div class="modal fade" id="supplierModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5>Fornecedor</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div class="mb-3"><label class="form-label">Nome</label><input type="text" class="form-control" id="supName"></div>
+    <div class="mb-3"><label class="form-label">Serviço</label><input type="text" class="form-control" id="supService" placeholder="Buffet, Fotografia..."></div>
+    <div class="mb-3"><label class="form-label">Telefone</label><input type="tel" class="form-control" id="supPhone"></div>
+    <button type="button" class="btn btn-primary w-100" onclick="addSupplier()">Salvar</button>
+  </div>
+</div></div></div>
 
-            const statusEl = document.getElementById('syncStatus');
-            statusEl.className = "sync-status syncing";
-            statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sincronizando...';
-            
-            const fileName = "cerimonial_pro_data.json";
-            const content = JSON.stringify(appData, null, 2);
-            
-            try {
-                let url = "https://api.github.com/gists";
-                let method = "POST";
-                let gistId = appData.settings.gistId;
+<!-- Budget Modal -->
+<div class="modal fade" id="budgetModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5>Orçamento</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div class="mb-3"><label class="form-label">Cliente</label><input type="text" class="form-control" id="bdClient"></div>
+    <div class="mb-3"><label class="form-label">Tipo de Evento</label><input type="text" class="form-control" id="bdEvent"></div>
+    <div class="mb-3"><label class="form-label">Valor (R$)</label><input type="number" class="form-control" id="bdValue" placeholder="0.00"></div>
+    <div class="mb-3"><label class="form-label">Status</label>
+      <select class="form-select" id="bdStatus">
+        <option value="pendente">Pendente</option><option value="aprovado">Aprovado</option><option value="recusado">Recusado</option>
+      </select>
+    </div>
+    <button type="button" class="btn btn-primary w-100" onclick="addBudget()">Salvar</button>
+  </div>
+</div></div></div>
 
-                if (gistId) {
-                    url += "/" + gistId;
-                    method = "PATCH";
-                }
+<!-- Contract Modal -->
+<div class="modal fade" id="contractModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5>Contrato</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div class="mb-3"><label class="form-label">Cliente</label><input type="text" class="form-control" id="ctClient"></div>
+    <div class="mb-3"><label class="form-label">Tipo de Evento</label><input type="text" class="form-control" id="ctEvent"></div>
+    <div class="mb-3"><label class="form-label">Valor (R$)</label><input type="number" class="form-control" id="ctValue"></div>
+    <div class="mb-3"><label class="form-label">Data de Assinatura</label><input type="date" class="form-control" id="ctDate"></div>
+    <button type="button" class="btn btn-primary w-100" onclick="addContract()">Salvar</button>
+  </div>
+</div></div></div>
 
-                const response = await fetch(url, {
-                    method: method,
-                    headers: {
-                        "Authorization": `token ${token}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        description: "Backup CerimonialPro",
-                        public: false,
-                        files: {
-                            [fileName]: { content: content }
-                        }
-                    })
-                });
+<!-- Receipt Modal -->
+<div class="modal fade" id="receiptModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5>Recibo</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div class="mb-3"><label class="form-label">Cliente</label><input type="text" class="form-control" id="rcClient"></div>
+    <div class="mb-3"><label class="form-label">Descrição</label><input type="text" class="form-control" id="rcDesc"></div>
+    <div class="mb-3"><label class="form-label">Valor (R$)</label><input type="number" class="form-control" id="rcValue"></div>
+    <div class="mb-3"><label class="form-label">Data</label><input type="date" class="form-control" id="rcDate"></div>
+    <button type="button" class="btn btn-primary w-100" onclick="addReceipt()">Salvar</button>
+  </div>
+</div></div></div>
 
-                if (!response.ok) throw new Error("Erro na comunicação com GitHub");
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ─────────────────────────────────────────────────────────────
+// APP STATE
+// ─────────────────────────────────────────────────────────────
+let appData = {
+  events: [], clients: [], suppliers: [],
+  budgets: [], contracts: [], receipts: [], tasks: [],
+  settings: { companyName: "CerimonialPro" }
+};
 
-                const result = await response.json();
-                if (!gistId) {
-                    appData.settings.gistId = result.id;
-                    document.getElementById('gistId').value = result.id;
-                    saveData();
-                }
+let currentUser = null;
+let isSaving    = false;
 
-                statusEl.className = "sync-status online";
-                statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Sincronizado';
-                alert("Sincronização concluída com sucesso!");
-            } catch (error) {
-                console.error(error);
-                statusEl.className = "sync-status offline";
-                statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Erro ao Sincronizar';
-                alert("Erro ao sincronizar: " + error.message);
-            }
-        }
+// ─────────────────────────────────────────────────────────────
+// FIREBASE INIT  (waits for the module to expose window._firebase)
+// ─────────────────────────────────────────────────────────────
+function waitForFirebase(cb, tries = 0) {
+  if (window._firebase) { cb(); }
+  else if (tries < 40)  { setTimeout(() => waitForFirebase(cb, tries + 1), 100); }
+  else                  { showConfigError(); }
+}
 
-        function checkGistSync() {
-            const statusEl = document.getElementById('syncStatus');
-            if (appData.settings.gistToken && appData.settings.gistId) {
-                statusEl.className = "sync-status online";
-                statusEl.innerHTML = '<i class="fas fa-cloud"></i> Conectado ao Gist';
-            }
-        }
+function showConfigError() {
+  document.getElementById('loginScreen').innerHTML = `
+    <div class="login-card">
+      <div class="logo" style="color:#dc3545;"><i class="fas fa-exclamation-triangle"></i></div>
+      <h2 style="color:#dc3545;">Firebase não configurado</h2>
+      <p>Abra o arquivo HTML num editor de texto e substitua as chaves Firebase no topo do arquivo.</p>
+      <div class="firebase-note" style="text-align:left;">
+        <ol style="margin:0;padding-left:18px;">
+          <li>Acesse <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a></li>
+          <li>Crie um projeto (gratuito)</li>
+          <li>Vá em <strong>Configurações do projeto → Seus apps → Web</strong></li>
+          <li>Copie o bloco <code>firebaseConfig</code> e cole no HTML</li>
+          <li>Ative <strong>Authentication → Google</strong></li>
+          <li>Ative <strong>Firestore Database</strong></li>
+        </ol>
+      </div>
+    </div>`;
+}
 
-        // CRUD Operations
-        function addEvent() {
-            const ev = {
-                id: Date.now().toString(),
-                type: document.getElementById('evType').value,
-                clientName: document.getElementById('evClient').value,
-                date: document.getElementById('evDate').value,
-                status: 'planejamento'
-            };
-            appData.events.push(ev);
-            saveData();
-            bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
-            updateDashboard();
-        }
+waitForFirebase(() => {
+  const { auth, onAuthStateChanged } = window._firebase;
 
-        function updateDashboard() {
-            document.getElementById('totalEvents').textContent = appData.events.length;
-            document.getElementById('totalClients').textContent = appData.clients.length;
-            
-            const total = appData.receipts.reduce((sum, r) => sum + (r.value || 0), 0);
-            document.getElementById('totalRevenue').textContent = `R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            
-            const list = document.getElementById('upcomingEventsList');
-            list.innerHTML = '';
-            appData.events.sort((a,b) => new Date(a.date) - new Date(b.date)).slice(0,5).forEach(ev => {
-                list.innerHTML += `<tr><td>${new Date(ev.date).toLocaleDateString('pt-BR')}</td><td>${ev.type}</td><td>${ev.clientName}</td><td><span class="badge bg-info">${ev.status}</span></td></tr>`;
-            });
+  document.getElementById('btnGoogleLogin').addEventListener('click', doLogin);
 
-            const fullList = document.getElementById('fullEventsList');
-            fullList.innerHTML = '';
-            appData.events.forEach(ev => {
-                fullList.innerHTML += `<tr><td>${ev.date}</td><td>${ev.type}</td><td>${ev.clientName}</td><td><button class="btn btn-sm btn-danger" onclick="deleteEvent('${ev.id}')">Excluir</button></td></tr>`;
-            });
-        }
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      currentUser = user;
+      showApp(user);
+      loadFromFirestore();
+    } else {
+      currentUser = null;
+      showLogin();
+    }
+  });
+});
 
-        function deleteEvent(id) {
-            appData.events = appData.events.filter(e => e.id !== id);
-            saveData();
-            updateDashboard();
-        }
+// ─────────────────────────────────────────────────────────────
+// AUTH
+// ─────────────────────────────────────────────────────────────
+async function doLogin() {
+  try {
+    const { auth, provider, signInWithPopup } = window._firebase;
+    await signInWithPopup(auth, provider);
+  } catch(e) {
+    alert("Erro ao entrar: " + e.message);
+  }
+}
 
-        function showEventModal() {
-            new bootstrap.Modal(document.getElementById('eventModal')).show();
-        }
-    </script>
+async function doLogout() {
+  const { auth, signOut } = window._firebase;
+  await signOut(auth);
+}
+
+function showLogin() {
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appShell').style.display    = 'none';
+}
+
+function showApp(user) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display    = 'block';
+
+  // Sidebar user info
+  document.getElementById('userPhoto').src    = user.photoURL || '';
+  document.getElementById('userName').textContent = user.displayName || user.email;
+
+  // Settings page
+  document.getElementById('settingsUserPhoto').src   = user.photoURL || '';
+  document.getElementById('settingsUserName').textContent  = user.displayName || '';
+  document.getElementById('settingsUserEmail').textContent = user.email;
+
+  setupMobileMenu();
+  setupNavigation();
+}
+
+// ─────────────────────────────────────────────────────────────
+// FIRESTORE SYNC
+// ─────────────────────────────────────────────────────────────
+async function loadFromFirestore() {
+  const { db, doc, getDoc, onSnapshot } = window._firebase;
+  const uid = currentUser.uid;
+  const ref = doc(db, "usuarios", uid);
+
+  setSyncStatus('syncing', 'Carregando...');
+
+  // Real-time listener: atualiza automaticamente quando outro dispositivo salva
+  onSnapshot(ref, snap => {
+    if (snap.exists()) {
+      appData = snap.data();
+      applySettings();
+      updateAllViews();
+      setSyncStatus('online', 'Sincronizado');
+    } else {
+      // Primeiro acesso: salva dados iniciais
+      saveToFirestore();
+    }
+  }, err => {
+    console.error(err);
+    setSyncStatus('offline', 'Erro na conexão');
+  });
+}
+
+async function saveToFirestore() {
+  if (!currentUser || isSaving) return;
+  isSaving = true;
+  setSyncStatus('syncing', 'Salvando...');
+  try {
+    const { db, doc, setDoc } = window._firebase;
+    await setDoc(doc(db, "usuarios", currentUser.uid), appData);
+    setSyncStatus('online', 'Salvo ✓');
+  } catch(e) {
+    console.error(e);
+    setSyncStatus('offline', 'Erro ao salvar');
+  } finally {
+    isSaving = false;
+  }
+}
+
+function manualSync() { saveToFirestore(); }
+
+function setSyncStatus(type, msg) {
+  const el = document.getElementById('syncStatus');
+  const icons = { syncing: 'fas fa-spinner fa-spin', online: 'fas fa-check-circle', offline: 'fas fa-exclamation-triangle' };
+  el.className = `sync-status ${type}`;
+  el.innerHTML = `<i class="${icons[type]}"></i> ${msg}`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// UI SETUP
+// ─────────────────────────────────────────────────────────────
+function applySettings() {
+  const name = appData.settings?.companyName || 'CerimonialPro';
+  document.getElementById('companyNameDisplay').textContent = name;
+  const inp = document.getElementById('companyNameInput');
+  if (inp) inp.value = name;
+}
+
+function setupMobileMenu() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  const toggle  = document.getElementById('sidebarToggle');
+  toggle.onclick = () => { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); };
+  overlay.onclick = () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); };
+}
+
+function setupNavigation() {
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const target = link.getAttribute('data-target');
+      document.querySelectorAll('.content-section').forEach(s => s.style.display = 'none');
+      document.getElementById(target).style.display = 'block';
+      document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
+      document.getElementById('pageTitleDisplay').textContent = link.textContent.trim();
+      if (target === 'reports') buildCharts();
+      if (window.innerWidth < 992) {
+        document.getElementById('sidebar').classList.remove('active');
+        document.getElementById('sidebarOverlay').classList.remove('active');
+      }
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// CRUD HELPERS
+// ─────────────────────────────────────────────────────────────
+function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function hideModal(id) {
+  const m = bootstrap.Modal.getInstance(document.getElementById(id));
+  if (m) m.hide();
+}
+
+function persist() { saveToFirestore(); updateAllViews(); }
+
+// ── Events ──
+function showEventModal() { new bootstrap.Modal(document.getElementById('eventModal')).show(); }
+function addEvent() {
+  appData.events.push({
+    id: newId(),
+    type: document.getElementById('evType').value,
+    clientName: document.getElementById('evClient').value,
+    date: document.getElementById('evDate').value,
+    status: document.getElementById('evStatus').value
+  });
+  hideModal('eventModal');
+  persist();
+}
+function deleteEvent(id) { if (confirm('Excluir evento?')) { appData.events = appData.events.filter(e => e.id !== id); persist(); } }
+
+// ── Clients ──
+function showClientModal() { new bootstrap.Modal(document.getElementById('clientModal')).show(); }
+function addClient() {
+  appData.clients.push({ id: newId(), name: document.getElementById('clName').value, phone: document.getElementById('clPhone').value, email: document.getElementById('clEmail').value });
+  hideModal('clientModal');
+  persist();
+}
+function deleteClient(id) { if (confirm('Excluir cliente?')) { appData.clients = appData.clients.filter(c => c.id !== id); persist(); } }
+
+// ── Suppliers ──
+function showSupplierModal() { new bootstrap.Modal(document.getElementById('supplierModal')).show(); }
+function addSupplier() {
+  appData.suppliers.push({ id: newId(), name: document.getElementById('supName').value, service: document.getElementById('supService').value, phone: document.getElementById('supPhone').value });
+  hideModal('supplierModal');
+  persist();
+}
+function deleteSupplier(id) { if (confirm('Excluir fornecedor?')) { appData.suppliers = appData.suppliers.filter(s => s.id !== id); persist(); } }
+
+// ── Budgets ──
+function showBudgetModal() { new bootstrap.Modal(document.getElementById('budgetModal')).show(); }
+function addBudget() {
+  appData.budgets.push({ id: newId(), client: document.getElementById('bdClient').value, event: document.getElementById('bdEvent').value, value: parseFloat(document.getElementById('bdValue').value) || 0, status: document.getElementById('bdStatus').value });
+  hideModal('budgetModal');
+  persist();
+}
+function deleteBudget(id) { if (confirm('Excluir orçamento?')) { appData.budgets = appData.budgets.filter(b => b.id !== id); persist(); } }
+
+// ── Contracts ──
+function showContractModal() { new bootstrap.Modal(document.getElementById('contractModal')).show(); }
+function addContract() {
+  appData.contracts.push({ id: newId(), client: document.getElementById('ctClient').value, event: document.getElementById('ctEvent').value, value: parseFloat(document.getElementById('ctValue').value) || 0, date: document.getElementById('ctDate').value });
+  hideModal('contractModal');
+  persist();
+}
+function deleteContract(id) { if (confirm('Excluir contrato?')) { appData.contracts = appData.contracts.filter(c => c.id !== id); persist(); } }
+
+// ── Receipts ──
+function showReceiptModal() { new bootstrap.Modal(document.getElementById('receiptModal')).show(); }
+function addReceipt() {
+  appData.receipts.push({ id: newId(), client: document.getElementById('rcClient').value, description: document.getElementById('rcDesc').value, value: parseFloat(document.getElementById('rcValue').value) || 0, date: document.getElementById('rcDate').value });
+  hideModal('receiptModal');
+  persist();
+}
+function deleteReceipt(id) { if (confirm('Excluir recibo?')) { appData.receipts = appData.receipts.filter(r => r.id !== id); persist(); } }
+
+// ── Settings ──
+function saveCompanySettings() {
+  if (!appData.settings) appData.settings = {};
+  appData.settings.companyName = document.getElementById('companyNameInput').value;
+  applySettings();
+  persist();
+  alert('Configurações salvas!');
+}
+
+// ─────────────────────────────────────────────────────────────
+// VIEWS
+// ─────────────────────────────────────────────────────────────
+function fmtDate(d) { if (!d) return '-'; try { return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR'); } catch { return d; } }
+function fmtMoney(v) { return `R$ ${(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}`; }
+function statusBadge(s) {
+  const map = { planejamento:'info', confirmado:'success', realizado:'secondary', cancelado:'danger', pendente:'warning', aprovado:'success', recusado:'danger' };
+  return `<span class="badge bg-${map[s]||'light'} text-dark">${s}</span>`;
+}
+
+function updateAllViews() {
+  updateDashboard();
+  updateEvents();
+  updateClients();
+  updateSuppliers();
+  updateBudgets();
+  updateContracts();
+  updateReceipts();
+}
+
+function updateDashboard() {
+  document.getElementById('totalEvents').textContent  = appData.events.length;
+  document.getElementById('totalClients').textContent = appData.clients.length;
+  const total = appData.receipts.reduce((s,r) => s + (r.value||0), 0);
+  document.getElementById('totalRevenue').textContent = fmtMoney(total);
+
+  const list = document.getElementById('upcomingEventsList');
+  list.innerHTML = '';
+  [...appData.events].sort((a,b) => new Date(a.date)-new Date(b.date)).slice(0,5).forEach(ev => {
+    list.innerHTML += `<tr><td>${fmtDate(ev.date)}</td><td>${ev.type}</td><td>${ev.clientName}</td><td>${statusBadge(ev.status)}</td></tr>`;
+  });
+
+  const tasks = document.getElementById('pendingTasksList');
+  tasks.innerHTML = appData.tasks.length
+    ? appData.tasks.map(t => `<li class="list-group-item">${t.title}</li>`).join('')
+    : '<li class="list-group-item text-muted">Nenhuma tarefa pendente</li>';
+}
+
+function updateEvents() {
+  const tb = document.getElementById('fullEventsList');
+  if (!tb) return;
+  tb.innerHTML = appData.events.map(ev => `
+    <tr><td>${fmtDate(ev.date)}</td><td>${ev.type}</td><td>${ev.clientName}</td><td>${statusBadge(ev.status)}</td>
+    <td><button class="btn btn-sm btn-danger" onclick="deleteEvent('${ev.id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+}
+
+function updateClients() {
+  const tb = document.getElementById('clientsList');
+  if (!tb) return;
+  tb.innerHTML = appData.clients.map(c => `
+    <tr><td>${c.name}</td><td>${c.phone||'-'}</td><td>${c.email||'-'}</td>
+    <td><button class="btn btn-sm btn-danger" onclick="deleteClient('${c.id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+}
+
+function updateSuppliers() {
+  const tb = document.getElementById('suppliersList');
+  if (!tb) return;
+  tb.innerHTML = appData.suppliers.map(s => `
+    <tr><td>${s.name}</td><td>${s.service||'-'}</td><td>${s.phone||'-'}</td>
+    <td><button class="btn btn-sm btn-danger" onclick="deleteSupplier('${s.id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+}
+
+function updateBudgets() {
+  const tb = document.getElementById('budgetsList');
+  if (!tb) return;
+  tb.innerHTML = appData.budgets.map(b => `
+    <tr><td>${b.client}</td><td>${b.event}</td><td>${fmtMoney(b.value)}</td><td>${statusBadge(b.status)}</td>
+    <td><button class="btn btn-sm btn-danger" onclick="deleteBudget('${b.id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+}
+
+function updateContracts() {
+  const tb = document.getElementById('contractsList');
+  if (!tb) return;
+  tb.innerHTML = appData.contracts.map(c => `
+    <tr><td>${c.client}</td><td>${c.event}</td><td>${fmtMoney(c.value)}</td><td>${fmtDate(c.date)}</td>
+    <td><button class="btn btn-sm btn-danger" onclick="deleteContract('${c.id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+}
+
+function updateReceipts() {
+  const tb = document.getElementById('receiptsList');
+  if (!tb) return;
+  tb.innerHTML = appData.receipts.map(r => `
+    <tr><td>${r.client}</td><td>${r.description}</td><td>${fmtMoney(r.value)}</td><td>${fmtDate(r.date)}</td>
+    <td><button class="btn btn-sm btn-danger" onclick="deleteReceipt('${r.id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+}
+
+// ─────────────────────────────────────────────────────────────
+// CHARTS
+// ─────────────────────────────────────────────────────────────
+let chartInstances = {};
+function buildCharts() {
+  const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+  const evByMonth = Array(12).fill(0);
+  appData.events.forEach(e => { if (e.date) evByMonth[new Date(e.date+'T12:00:00').getMonth()]++; });
+
+  const revByMonth = Array(12).fill(0);
+  appData.receipts.forEach(r => { if (r.date) revByMonth[new Date(r.date+'T12:00:00').getMonth()] += (r.value||0); });
+
+  ['eventsChart','revenueChart'].forEach(id => { if (chartInstances[id]) chartInstances[id].destroy(); });
+
+  chartInstances.eventsChart = new Chart(document.getElementById('eventsChart'), {
+    type: 'bar',
+    data: { labels: months, datasets: [{ label:'Eventos', data: evByMonth, backgroundColor:'rgba(139,69,19,0.7)' }] }
+  });
+
+  chartInstances.revenueChart = new Chart(document.getElementById('revenueChart'), {
+    type: 'line',
+    data: { labels: months, datasets: [{ label:'Receita (R$)', data: revByMonth, borderColor:'#D2691E', backgroundColor:'rgba(210,105,30,0.1)', fill:true }] }
+  });
+}
+</script>
 </body>
 </html>
